@@ -49,6 +49,40 @@
     .dark .track-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); }
     input[type="range"] { accent-color: #141414; }
     .dark input[type="range"] { accent-color: #F4F4F0; }
+
+    /* React Bits Pro "Animated List" — Spring Morph-Into-Place Feed */
+    .anim-feed-mask {
+      mask-image: linear-gradient(180deg, #000 0%, #000 78%, transparent 100%);
+      -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 78%, transparent 100%);
+    }
+    @keyframes morphCardIn {
+      0% {
+        opacity: 0;
+        transform: translateY(-18px) scale(0.93);
+        max-height: 0;
+        margin-bottom: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+      }
+      55% {
+        opacity: 1;
+        transform: translateY(2px) scale(1.01);
+        max-height: 120px;
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        max-height: 120px;
+      }
+    }
+    .anim-list-item {
+      animation: morphCardIn 0.56s cubic-bezier(0.22, 1.24, 0.36, 1) forwards;
+      transform-origin: top center;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .anim-list-item:hover {
+      transform: translateY(-1px) scale(1.008);
+    }
   </style>
 </head>
 <body class="bg-stoneBg text-charcoal dark:bg-darkBg dark:text-[#F4F4F0] font-sans antialiased transition-colors duration-300 overflow-x-hidden">
@@ -253,6 +287,39 @@
       <!-- Horizontal Snap-Scroll Player Cards (FitIQ signature pattern!) -->
       <div id="playerTrackContainer" class="track-scroll flex gap-4 sm:gap-5 overflow-x-auto pb-6 snap-x snap-mandatory">
         <!-- Populated dynamically -->
+      </div>
+
+      <!-- ==================== ANIMATED LIST: LIVE SCOUTING SIGNAL FEED ==================== -->
+      <div class="mt-12 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center bg-stoneRest/60 dark:bg-darkCard/60 rounded-[26px] p-6 sm:p-9 border border-black/[0.05] dark:border-white/[0.06]">
+        <div class="lg:col-span-5 space-y-4">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white dark:bg-darkRest border border-black/[0.06] dark:border-white/10 text-[11px] font-mono text-slateMuted dark:text-stone-300">
+            <span id="feedPulseDot" class="w-2 h-2 rounded-full bg-rrAccent animate-pulse"></span>
+            LIVE WAR ROOM SIGNAL FEED
+          </div>
+          <h3 class="text-2xl sm:text-3xl font-semibold tracking-tight leading-[1.14]">
+            Key discoveries surfacing in real time
+          </h3>
+          <p class="text-sm text-slateMuted dark:text-stone-400 leading-relaxed">
+            Every card is a verified statistical signal extracted from 200,999 audited deliveries—highlighting clutch risers, uncapped Indian gems, Jaipur spin fit, and our transparent Jasprit Bumrah #11 case study. Hover to pause or click any card to inspect the player.
+          </p>
+          <div class="flex flex-wrap items-center gap-2.5 pt-1">
+            <button id="feedToggleBtn" onclick="toggleAnimatedFeed()" class="px-4 py-2 rounded-full bg-charcoal dark:bg-white text-white dark:text-charcoal text-xs font-medium hover:opacity-90 transition cursor-pointer">
+              Pause feed
+            </button>
+            <button onclick="pushNextSignal(true)" class="px-4 py-2 rounded-full bg-white dark:bg-darkRest border border-black/[0.08] dark:border-white/10 text-xs font-medium hover:bg-black/5 dark:hover:bg-white/10 transition cursor-pointer">
+              Next signal ↓
+            </button>
+            <span id="feedCounter" class="text-xs font-mono text-slateMuted dark:text-stone-400 ml-1">4 / 10 signals</span>
+          </div>
+        </div>
+
+        <div
+          class="lg:col-span-7 relative h-[368px] overflow-hidden anim-feed-mask"
+          onmouseenter="feedHoverPaused = true"
+          onmouseleave="feedHoverPaused = false"
+        >
+          <div id="animatedSignalFeed" class="space-y-3"></div>
+        </div>
       </div>
     </section>
 
@@ -1322,8 +1389,87 @@
       }
     }
 
+    // --- ANIMATED LIST: LIVE WAR ROOM SCOUTING FEED (React Bits Pro style) ---
+    const SIGNAL_ITEMS = [
+      { kind: 'bat', player: 'Tim David', tag: 'CLUTCH OUTLIER', metric: 'PRR 79.6', title: 'Tim David dominates peak-pressure batting', desc: '187.1 HP Strike Rate (+40.4 TSR above par) across 40 innings · 100% bootstrap.', time: 'Bat #01' },
+      { kind: 'bowl', player: 'Varun Chakravarthy', tag: 'SPIN STRANGLER', metric: 'PRR 79.8', title: 'Varun Chakravarthy leads all T20 bowlers', desc: '43 HP wickets at 7.32 Econ (+13.9 Delta over usual baseline) across 49 spells.', time: 'Bowl #01' },
+      { kind: 'bat', player: 'Shashank Singh', tag: 'UNCAPPED GEM', metric: 'PRR 71.9', title: 'Shashank Singh solves RR #5–#7 gap', desc: '56.8 HP Avg & 168.0 SR with 75% positive innings—zero overseas slot burned.', time: 'Bat #04' },
+      { kind: 'bowl', player: 'Jasprit Bumrah', tag: 'DATA INTEGRITY', metric: 'PRR 70.3', title: 'Why Jasprit Bumrah sits transparently at #11', desc: 'Elite everywhere (+24.08 → +24.04 EB, +1.87 saved/ov) → flat −0.04 Delta.', time: 'Case #11' },
+      { kind: 'bowl', player: 'Adam Zampa', tag: 'PRESSURE RISER', metric: 'PRR 76.8', title: 'Adam Zampa surges +23.6 under pressure', desc: '24 HP wickets @ 12.1 SR—tailor-made for Sawai Mansingh square boundaries.', time: 'Bowl #02' },
+      { kind: 'bat', player: 'Ashutosh Sharma', tag: 'DOMESTIC FINISHER', metric: 'PRR 67.5', title: 'Ashutosh Sharma strikes 177.1 in crunch overs', desc: '+25.3 True SR & +16.4 Delta over normal baseline across 15 pressure innings.', time: 'Bat #08' },
+      { kind: 'bowl', player: 'Mujeeb Ur Rahman', tag: 'ECONOMY KING', metric: 'PRR 75.5', title: 'Mujeeb saves +2.02 runs per over under pressure', desc: '5.67 HP Economy with an unmatched 81% positive-spell rate across 21 games.', time: 'Bowl #03' },
+      { kind: 'bowl', player: 'Josh Hazlewood', tag: 'PACE ENFORCER', metric: 'PRR 75.3', title: 'Josh Hazlewood is T20’s #1 pressure pacer', desc: '33 wickets @ 7.53 Econ (+1.39 saved/over)—ideal hard-length partner to Archer.', time: 'Bowl #04' },
+      { kind: 'bat', player: 'Suryakumar Yadav', tag: 'VOLUME IRONMAN', metric: 'PRR 71.0', title: 'Suryakumar Yadav delivers across 59 HP innings', desc: 'Dataset-high 776 high-pressure balls at 40.6 Avg & 162.2 SR (100% boot).', time: 'Bat #06' },
+      { kind: 'gem', player: 'Sufiyan Muqeem', tag: 'VIGNESH PUTHUR WATCH', metric: 'PRR 83.5', title: 'Pre-breakout alert: Sufiyan Muqeem (136 HP balls)', desc: '4.46 HP Economy with 12 wickets—just below our 150-ball cutoff.', time: 'Watchlist' }
+    ];
+    let feedIdx = 0;
+    let feedRunning = true;
+    let feedHoverPaused = false;
+    let feedTimer = null;
+
+    function buildSignalCard(item) {
+      const clickAttr = item.kind !== 'gem'
+        ? `onclick="openPlayerDrawer('${item.kind}', '${item.player.replace(/'/g,"\\'")}')"`
+        : `onclick="setTrack('gems'); document.getElementById('rankings').scrollIntoView({behavior:'smooth'})"`;
+      const isHighlight = item.tag === 'CLUTCH OUTLIER' || item.tag === 'SPIN STRANGLER' || item.tag === 'UNCAPPED GEM';
+      return `
+        <div ${clickAttr} class="anim-list-item bg-white dark:bg-darkCard rounded-[18px] p-4 border border-black/[0.06] dark:border-white/[0.08] shadow-[0_2px_10px_rgba(0,0,0,0.03)] hover:border-black/20 dark:hover:border-white/25 cursor-pointer flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-full shrink-0 flex items-center justify-center font-mono text-[11px] font-semibold ${isHighlight ? 'bg-charcoal text-white dark:bg-white dark:text-charcoal' : 'bg-stonePill dark:bg-darkRest text-charcoal dark:text-stone-200'}">
+            ${item.time.replace(' ','').slice(0,5)}
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="text-[10px] font-mono uppercase tracking-wider font-semibold ${isHighlight ? 'text-rrAccent' : 'text-slateMuted dark:text-stone-400'}">${item.tag}</span>
+                <span class="text-slateMuted/40">·</span>
+                <span class="text-[11px] font-mono text-slateMuted dark:text-stone-400">${item.metric}</span>
+              </div>
+              <span class="text-[11px] font-mono text-slateMuted dark:text-stone-400 shrink-0">Inspect →</span>
+            </div>
+            <div class="text-sm font-semibold tracking-tight mt-0.5 truncate">${item.title}</div>
+            <p class="text-xs text-slateMuted dark:text-stone-400 mt-0.5 line-clamp-1">${item.desc}</p>
+          </div>
+        </div>`;
+    }
+
+    function pushNextSignal(force = false) {
+      if (!force && (!feedRunning || feedHoverPaused)) return;
+      const box = document.getElementById('animatedSignalFeed');
+      if (!box) return;
+      const item = SIGNAL_ITEMS[feedIdx % SIGNAL_ITEMS.length];
+      feedIdx++;
+      const wrap = document.createElement('div');
+      wrap.innerHTML = buildSignalCard(item).trim();
+      const card = wrap.firstElementChild;
+      box.prepend(card);
+      while (box.children.length > 5) {
+        box.removeChild(box.lastElementChild);
+      }
+      const cnt = document.getElementById('feedCounter');
+      if (cnt) cnt.textContent = `${((feedIdx - 1) % SIGNAL_ITEMS.length) + 1} / ${SIGNAL_ITEMS.length} signals`;
+    }
+
+    function initAnimatedFeed() {
+      const box = document.getElementById('animatedSignalFeed');
+      if (!box) return;
+      box.innerHTML = '';
+      feedIdx = 0;
+      for (let i = 0; i < 4; i++) pushNextSignal(true);
+      if (feedTimer) clearInterval(feedTimer);
+      feedTimer = setInterval(() => pushNextSignal(false), 3000);
+    }
+
+    function toggleAnimatedFeed() {
+      feedRunning = !feedRunning;
+      const btn = document.getElementById('feedToggleBtn');
+      const dot = document.getElementById('feedPulseDot');
+      if (btn) btn.textContent = feedRunning ? 'Pause feed' : 'Resume feed';
+      if (dot) dot.classList.toggle('animate-pulse', feedRunning);
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       renderTrackCards();
+      initAnimatedFeed();
       renderCharts();
       renderDatabaseTable();
       renderRRPlanner();
