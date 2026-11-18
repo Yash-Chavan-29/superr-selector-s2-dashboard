@@ -865,14 +865,32 @@
 
     function findAllPlayerMatches(raw) {
       const q = (raw || '').toLowerCase().trim();
-      if (!q) return [];
+      const gemBat = (D.gems && D.gems.batters ? D.gems.batters : [])
+        .map(r => ({ kind: 'gem_bat', r, sub: `Watchlist Gem (Batter) · ${r.ipl_team} · HP SR ${r.hp_sr}` }));
+      const gemBowl = (D.gems && D.gems.bowlers ? D.gems.bowlers : [])
+        .map(r => ({ kind: 'gem_bowl', r, sub: `Watchlist Gem (Bowler) · ${r.ipl_team} · Econ ${r.hp_econ.toFixed(2)}` }));
+      if (!q) {
+        // Show Top 6 Quick-Picks immediately when focusing an empty search bar
+        const picks = [
+          { kind: 'bat', r: D.batters[0], sub: `Batter #1 · ${D.batters[0].ipl_team} · HP SR ${D.batters[0].hp_sr}` },
+          { kind: 'bowl', r: D.bowlers[0], sub: `Bowler #1 (${D.bowlers[0].pace_spin}) · ${D.bowlers[0].ipl_team} · Econ ${D.bowlers[0].hp_econ.toFixed(2)}` },
+          { kind: 'bat', r: D.batters[5], sub: `Batter #6 · ${D.batters[5].ipl_team} · HP SR ${D.batters[5].hp_sr}` },
+          { kind: 'bowl', r: D.bowlers[4], sub: `Bowler #5 (${D.bowlers[4].pace_spin}) · ${D.bowlers[4].ipl_team} · Econ ${D.bowlers[4].hp_econ.toFixed(2)}` },
+          { kind: 'bowl', r: D.bowlers[10], sub: `Bowler #11 Case Study · ${D.bowlers[10].ipl_team} · Econ ${D.bowlers[10].hp_econ.toFixed(2)}` },
+          { kind: 'bat', r: D.batters[3], sub: `Batter #4 Uncapped Gem · ${D.batters[3].ipl_team} · HP Avg ${D.batters[3].hp_avg}` },
+        ];
+        return picks;
+      }
       const batM = D.batters
         .filter(r => r.name.toLowerCase().includes(q) || (r.ipl_team||'').toLowerCase().includes(q) || (r.country||'').toLowerCase().includes(q))
         .map(r => ({ kind: 'bat', r, sub: `Batter #${r.rank} · ${r.ipl_team} · HP SR ${r.hp_sr}` }));
       const bowlM = D.bowlers
         .filter(r => r.name.toLowerCase().includes(q) || (r.ipl_team||'').toLowerCase().includes(q) || (r.country||'').toLowerCase().includes(q))
         .map(r => ({ kind: 'bowl', r, sub: `Bowler #${r.rank} (${r.pace_spin}) · ${r.ipl_team} · Econ ${r.hp_econ.toFixed(2)}` }));
-      return [...batM, ...bowlM].sort((a, b) => b.r.prr - a.r.prr);
+      const gemM = [...gemBat, ...gemBowl].filter(m =>
+        m.r.name.toLowerCase().includes(q) || (m.r.ipl_team||'').toLowerCase().includes(q) || (m.r.country||'').toLowerCase().includes(q)
+      );
+      return [...batM, ...bowlM, ...gemM].sort((a, b) => b.r.prr - a.r.prr);
     }
 
     function handleGlobalSearch(val) {
@@ -895,22 +913,18 @@
       const listEl = document.getElementById('searchResultsList');
       if (!pop || !listEl) return;
 
-      if (!q) {
-        pop.classList.add('hidden');
-        lastSearchMatches = [];
-        return;
-      }
-
       lastSearchMatches = findAllPlayerMatches(q);
       pop.classList.remove('hidden');
 
       if (lastSearchMatches.length === 0) {
-        listEl.innerHTML = `<div class="p-4 text-xs text-slateMuted dark:text-stone-400 text-center">No eligible player found for "<strong>${q.replace(/</g,'&lt;')}</strong>" (181 audited players)</div>`;
+        listEl.innerHTML = `<div class="p-4 text-xs text-slateMuted dark:text-stone-400 text-center">No audited player found for "<strong>${q.replace(/</g,'&lt;')}</strong>" (192 eligible + watchlist players)</div>`;
         return;
       }
 
-      listEl.innerHTML = lastSearchMatches.slice(0, 8).map(m => `
+      const hdr = !q ? `<div class="px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-slateMuted dark:text-stone-400 bg-stoneBg/70 dark:bg-darkRest/70">Quick-Pick Scouting Profiles (Type any name or team)</div>` : '';
+      listEl.innerHTML = hdr + lastSearchMatches.slice(0, 8).map(m => `
         <button
+          type="button"
           onclick="selectSearchResult('${m.kind}', '${m.r.name.replace(/'/g,"\\'")}')"
           class="w-full text-left px-4 py-3 hover:bg-stoneBg dark:hover:bg-darkRest transition flex items-center justify-between gap-3 cursor-pointer"
         >
@@ -921,12 +935,12 @@
               <div class="text-[11px] text-slateMuted dark:text-stone-400 truncate mt-0.5">${m.sub}</div>
             </div>
           </div>
-          <span class="shrink-0 font-mono text-xs font-semibold px-2.5 py-1 rounded-full ${m.r.rank<=10 ? 'bg-rrAccent text-white' : 'bg-stonePill dark:bg-darkRest text-charcoal dark:text-stone-200'}">
+          <span class="shrink-0 font-mono text-xs font-semibold px-2.5 py-1 rounded-full ${m.r.rank<=10 && !m.kind.startsWith('gem') ? 'bg-rrAccent text-white' : 'bg-stonePill dark:bg-darkRest text-charcoal dark:text-stone-200'}">
             PRR ${m.r.prr.toFixed(1)}
           </span>
         </button>
-      `).join('') + (lastSearchMatches.length > 8 ? `
-        <button onclick="jumpToDatabaseSearch()" class="w-full py-2.5 text-center text-xs font-medium text-rrAccent hover:bg-stoneBg dark:hover:bg-darkRest cursor-pointer">
+      `).join('') + (q && lastSearchMatches.length > 8 ? `
+        <button type="button" onclick="jumpToDatabaseSearch()" class="w-full py-2.5 text-center text-xs font-medium text-rrAccent hover:bg-stoneBg dark:hover:bg-darkRest cursor-pointer">
           View all ${lastSearchMatches.length} matches in table ↓
         </button>` : '');
     }
@@ -1259,14 +1273,17 @@
 
     // --- SLIDE-OVER PLAYER DRAWER ---
     function openPlayerDrawer(kind, name) {
-      const pool = kind === 'bat' ? D.batters : D.bowlers;
+      const isGem = kind === 'gem_bat' || kind === 'gem_bowl';
+      const isBat = kind === 'bat' || kind === 'gem_bat';
+      const pool = kind === 'bat' ? D.batters : (kind === 'bowl' ? D.bowlers : (kind === 'gem_bat' ? D.gems.batters : D.gems.bowlers));
+      const normPool = isBat ? D.batters : D.bowlers;
       const r = pool.find(x => x.name === name);
       if (!r) return;
-      document.getElementById('dr-tag').textContent = `RANK #${r.rank} OF ${pool.length} · ${kind === 'bat' ? 'BATTER' : 'BOWLER'}`;
+      document.getElementById('dr-tag').textContent = isGem
+        ? `WATCHLIST GEM (75–149 HP BALLS) · ${isBat ? 'BATTER' : 'BOWLER'}`
+        : `RANK #${r.rank} OF ${pool.length} · ${isBat ? 'BATTER' : 'BOWLER'}`;
       document.getElementById('dr-name').textContent = r.name;
-      document.getElementById('dr-avatar').innerHTML = renderAvatar(r.name, 'w-12 h-12', r.rank <= 3);
-
-      const isBat = kind === 'bat';
+      document.getElementById('dr-avatar').innerHTML = renderAvatar(r.name, 'w-12 h-12', !isGem && r.rank <= 3);
       const pm = r.phase_mix || {};
       const rows = isBat ? [
         ['Pressure Reliability Rating', `${r.prr.toFixed(1)} / 100`],
@@ -1307,7 +1324,7 @@
         ? [['HP Impact','hp_rate_eb',false],['True SR','hp_tsr',false],['Survival','hp_avg',false],['Consistency','pos_inns_pct',false],['Clutch Lift','resilience_score',false]]
         : [['HP Impact','hp_rate_eb',false],['Econ Saved','hp_econ_saved',false],['Wicket SR','hp_sr',true],['Consistency','pos_inns_pct',false],['Clutch Lift','resilience_score',false]];
       const vals = spec.map(([_, k, inv]) => {
-        const arr = pool.map(x => x[k]); const lo = Math.min(...arr), hi = Math.max(...arr);
+        const arr = normPool.map(x => x[k]); const lo = Math.min(...arr), hi = Math.max(...arr);
         let n = (r[k] - lo) / Math.max(1e-6, hi - lo); if (inv) n = 1 - n;
         return Math.round(15 + 85 * Math.max(0, Math.min(1, n)));
       });
