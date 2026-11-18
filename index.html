@@ -1,1573 +1,1164 @@
 <!DOCTYPE html>
-<html lang="en" class="dark scroll-smooth">
+<html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rajasthan Royals | IPL 2027 Pressure & Auction Strategy Dashboard</title>
+  <title>SupeRR Selector S2 — Measure the pressure. Draft who delivers.</title>
+
+  <!-- Fonts: Plus Jakarta Sans (Editorial Sans) & JetBrains Mono (Metrics) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS & Plotly -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
   <script src="./data.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
-          fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
           colors: {
-            rrPink: '#E55A95',
-            rrHot: '#EC2B82',
-            rrBlue: '#4F7DF3',
-            rrCyan: '#38BDF8',
-            rrDeep: '#090D18',
+            stoneBg: '#F4F4F0',
+            stoneRest: '#EAEAE6',
+            stonePill: '#EBEBE7',
+            charcoal: '#141414',
+            slateMuted: '#666662',
+            rrAccent: '#C81E68',
+            darkBg: '#111110',
+            darkCard: '#1B1B19',
+            darkRest: '#232320',
+          },
+          borderRadius: {
+            'card': '22px',
           }
         }
       }
     }
   </script>
+
   <style>
-    :root {
-      --bg-base: #070B14;
-      --glass-bg: rgba(15, 21, 38, 0.72);
-      --glass-border: rgba(255, 255, 255, 0.11);
-      --glass-hover: rgba(236, 43, 130, 0.48);
-      --text-main: #F8FAFC;
-      --text-muted: #94A3B8;
-      --sub-surface: rgba(9, 13, 24, 0.65);
-    }
-    html.light {
-      --bg-base: #F4F3EF;
-      --glass-bg: rgba(255, 255, 255, 0.90);
-      --glass-border: rgba(15, 23, 42, 0.10);
-      --glass-hover: rgba(225, 29, 116, 0.45);
-      --text-main: #0F172A;
-      --text-muted: #475569;
-      --sub-surface: rgba(241, 245, 249, 0.85);
-    }
-    body {
-      background-color: var(--bg-base);
-      color: var(--text-main);
-      font-family: 'Inter', sans-serif;
-      overflow-x: hidden;
-      transition: background-color 0.3s ease, color 0.3s ease;
-    }
-    /* Cinematic Floodlight Stadium Background (Dark Mode) */
-    .stadium-bg {
-      position: fixed;
-      inset: 0;
-      z-index: -2;
-      pointer-events: none;
-      background:
-        radial-gradient(ellipse 55% 42% at 18% 8%, rgba(236, 43, 130, 0.20), transparent 70%),
-        radial-gradient(ellipse 50% 45% at 85% 15%, rgba(79, 125, 243, 0.22), transparent 70%),
-        radial-gradient(ellipse 65% 45% at 50% 95%, rgba(236, 43, 130, 0.14), transparent 70%),
-        radial-gradient(circle at 72% 48%, rgba(56, 189, 248, 0.08), transparent 45%),
-        linear-gradient(180deg, #060912 0%, #0B1124 52%, #070A15 100%);
-    }
-    html.light .stadium-bg {
-      background:
-        radial-gradient(ellipse 55% 40% at 15% 5%, rgba(225, 29, 116, 0.06), transparent 65%),
-        radial-gradient(ellipse 50% 40% at 85% 10%, rgba(79, 125, 243, 0.07), transparent 65%),
-        linear-gradient(180deg, #F6F5F1 0%, #EFECE6 100%);
-    }
-    /* Subtle stadium grid / light-streak texture */
-    .stadium-grid {
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-      pointer-events: none;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-      background-size: 56px 56px;
-      mask-image: radial-gradient(ellipse 80% 70% at 50% 35%, black 30%, transparent 100%);
-    }
-    html.light .stadium-grid { opacity: 0.25; }
-
-    /* Frosted Glass Panel */
-    .glass-card {
-      position: relative;
-      background: var(--glass-bg);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      border: 1px solid var(--glass-border);
-      border-radius: 14px;
-      box-shadow: 0 12px 34px -12px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255,255,255,0.06);
-      transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
-    }
-    html.light .glass-card {
-      box-shadow: 0 8px 24px -10px rgba(15, 23, 42, 0.08);
-    }
-    .glass-card:hover {
-      border-color: var(--glass-hover);
-    }
-    .glass-card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: 14px;
-      background: radial-gradient(320px circle at var(--mx, 50%) var(--my, 50%), rgba(236, 43, 130, 0.14), transparent 68%);
-      opacity: 0;
-      transition: opacity 0.25s ease;
-      pointer-events: none;
-    }
-    .glass-card:hover::before { opacity: 1; }
-
-    /* Sidebar Active Neon Pill (from ref_03 & ref_09) */
-    .nav-item {
-      position: relative;
-      transition: all 0.22s ease;
-      border: 1px solid transparent;
-    }
-    .nav-item.active {
-      background: linear-gradient(90deg, rgba(236, 43, 130, 0.34), rgba(79, 125, 243, 0.22));
-      border-color: rgba(236, 43, 130, 0.65);
-      color: #FFFFFF;
-      box-shadow: 0 0 22px rgba(236, 43, 130, 0.32), inset 0 0 12px rgba(236, 43, 130, 0.18);
-    }
-    html.light .nav-item.active {
-      background: linear-gradient(90deg, rgba(225, 29, 116, 0.14), rgba(79, 125, 243, 0.10));
-      color: #BE185D;
-      border-color: rgba(225, 29, 116, 0.45);
-      box-shadow: 0 4px 12px rgba(225, 29, 116, 0.12);
-    }
-
-    /* Neon Scroll Progress Rail on Right Edge (signature detail from ref_01!) */
-    .neon-scroll-track {
-      position: fixed;
-      right: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 6px;
-      height: 220px;
-      border-radius: 99px;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.12);
-      z-index: 40;
-      overflow: hidden;
-    }
-    .neon-scroll-thumb {
-      width: 100%;
-      height: 36px;
-      border-radius: 99px;
-      background: linear-gradient(180deg, #38BDF8 0%, #6366F1 50%, #EC2B82 100%);
-      box-shadow: 0 0 14px rgba(236, 43, 130, 0.85), 0 0 8px rgba(56, 189, 248, 0.7);
-      transition: transform 0.12s linear;
-    }
-
-    /* Glowing Status Pills (from ref_01 / ref_02 / ref_05) */
-    .pill-optimized {
-      background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(79, 125, 243, 0.25));
-      border: 1.5px solid rgba(125, 211, 252, 0.65);
-      color: #BAE6FD;
-      box-shadow: 0 0 20px rgba(56, 189, 248, 0.28);
-    }
-    html.light .pill-optimized {
-      background: rgba(59, 130, 246, 0.10);
-      border-color: #3B82F6;
-      color: #1D4ED8;
-      box-shadow: none;
-    }
-    .badge-high {
-      background: linear-gradient(90deg, rgba(236,43,130,0.38), rgba(190,24,93,0.45));
-      border: 1px solid rgba(244,114,182,0.55);
-      color: #FCE7F3;
-    }
-    html.light .badge-high { background: #BE185D; color: #FFFFFF; border-color: #BE185D; }
-    .badge-med {
-      background: linear-gradient(90deg, rgba(79,125,243,0.32), rgba(59,130,246,0.38));
-      border: 1px solid rgba(147,197,253,0.5);
-      color: #DBEAFE;
-    }
-    html.light .badge-med { background: #2563EB; color: #FFFFFF; border-color: #2563EB; }
-
-    /* Gradient Feature Bars (from ref_05) */
-    .grad-bar {
-      background: linear-gradient(90deg, #EC2B82 0%, #8B5CF6 52%, #38BDF8 100%);
-      box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
-    }
-
-    /* 3D Perspective Cricket Field (signature from ref_09!) */
-    .pitch-stage {
-      perspective: 900px;
-    }
-    .pitch-field {
-      background:
-        radial-gradient(circle at 50% 46%, rgba(34, 197, 94, 0.25) 0%, rgba(16, 185, 129, 0.14) 38%, rgba(14, 116, 144, 0.32) 78%, rgba(15, 23, 42, 0.72) 100%),
-        repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 26px, transparent 26px, transparent 52px);
-      border: 1.5px solid rgba(56, 189, 248, 0.38);
-      border-radius: 18px;
-      box-shadow: inset 0 0 60px rgba(16, 185, 129, 0.18), 0 18px 40px -15px rgba(0,0,0,0.65);
-      position: relative;
-      overflow: hidden;
-    }
-    .pitch-strip {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: 58px;
-      height: 175px;
-      background: linear-gradient(180deg, rgba(217, 183, 130, 0.24), rgba(180, 143, 92, 0.34), rgba(217, 183, 130, 0.24));
-      border: 1px dashed rgba(255,255,255,0.28);
-      border-radius: 6px;
-      pointer-events: none;
-    }
-    .pitch-oval {
-      position: absolute;
-      inset: 18px 24px;
-      border: 1.5px dashed rgba(255, 255, 255, 0.20);
-      border-radius: 50%;
-      pointer-events: none;
-    }
-    .xi-slot {
-      background: rgba(15, 23, 42, 0.86);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(148, 163, 184, 0.28);
-      transition: all 0.2s ease;
-    }
-    .xi-slot:hover {
-      border-color: #EC2B82;
-      transform: translateY(-2px);
-      box-shadow: 0 8px 22px rgba(236, 43, 130, 0.35);
-    }
-    .xi-slot.selected-swap {
-      border-color: #38BDF8;
-      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.65);
-    }
-
-    /* Scroll Reveal Animation */
-    .reveal-section {
-      opacity: 0;
-      transform: translateY(18px);
-      transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1), transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-    .reveal-section.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* Sub-table scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: rgba(15,23,42,0.4); }
-    ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #38BDF8, #EC2B82); border-radius: 99px; }
-    input[type="range"] { accent-color: #EC2B82; }
+    .track-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+    .track-scroll::-webkit-scrollbar-track { background: transparent; }
+    .track-scroll::-webkit-scrollbar-thumb { background: rgba(20, 20, 20, 0.14); border-radius: 999px; }
+    .dark .track-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); }
+    input[type="range"] { accent-color: #141414; }
+    .dark input[type="range"] { accent-color: #F4F4F0; }
   </style>
 </head>
-<body class="antialiased selection:bg-pink-500 selection:text-white">
-  <div class="stadium-bg"></div>
-  <div class="stadium-grid"></div>
+<body class="bg-stoneBg text-charcoal dark:bg-darkBg dark:text-[#F4F4F0] font-sans antialiased transition-colors duration-300 overflow-x-hidden">
 
-  <!-- NEON SCROLL RAIL (Desktop) -->
-  <div class="neon-scroll-track hidden xl:block" title="Scroll Progress">
-    <div id="scroll-thumb" class="neon-scroll-thumb"></div>
-  </div>
+  <!-- ==================== 1. STICKY TOP NAVIGATION BAR ==================== -->
+  <header class="sticky top-0 z-40 bg-stoneBg/90 dark:bg-darkBg/90 backdrop-blur-md border-b border-black/[0.04] dark:border-white/[0.06] transition-colors">
+    <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-3">
 
-  <!-- LAYOUT SHELL: FIXED LEFT SIDEBAR + CONTINUOUS SCROLLABLE MAIN CANVAS -->
-  <div class="flex min-h-screen">
+      <!-- Left: Pill Navigation Links -->
+      <nav class="hidden md:flex items-center gap-1.5" aria-label="Main Navigation">
+        <a href="#rankings" class="px-4 py-2 rounded-full bg-stonePill dark:bg-darkCard text-sm font-medium text-charcoal dark:text-stone-200 hover:bg-black/10 dark:hover:bg-white/10 transition">Rankings</a>
+        <a href="#analytics" class="px-4 py-2 rounded-full bg-stonePill dark:bg-darkCard text-sm font-medium text-charcoal dark:text-stone-200 hover:bg-black/10 dark:hover:bg-white/10 transition">Quadrants</a>
+        <a href="#method" class="px-4 py-2 rounded-full bg-stonePill dark:bg-darkCard text-sm font-medium text-charcoal dark:text-stone-200 hover:bg-black/10 dark:hover:bg-white/10 transition">Method</a>
+        <a href="#squad-fit" class="px-4 py-2 rounded-full bg-stonePill dark:bg-darkCard text-sm font-medium text-charcoal dark:text-stone-200 hover:bg-black/10 dark:hover:bg-white/10 transition">RR 2027</a>
+        <a href="#sandbox" class="px-4 py-2 rounded-full bg-stonePill dark:bg-darkCard text-sm font-medium text-charcoal dark:text-stone-200 hover:bg-black/10 dark:hover:bg-white/10 transition">Lab</a>
+      </nav>
 
-    <!-- LEFT SIDEBAR (Matches ref_01–ref_09!) -->
-    <aside class="hidden lg:flex flex-col justify-between w-60 shrink-0 fixed inset-y-0 left-0 z-40 px-4 py-5 border-r border-white/10 bg-[#070B14]/80 dark:bg-[#070B14]/80 backdrop-blur-xl">
-      <div class="space-y-6">
-        <!-- RR Crest Brand -->
-        <a href="#sec-overview" class="flex items-center gap-3 group">
-          <div class="w-11 h-11 rounded-full bg-gradient-to-br from-[#233282] via-[#1B2560] to-[#EC2B82] p-[2px] shadow-lg shadow-pink-600/25 shrink-0">
-            <div class="w-full h-full rounded-full bg-[#101836] flex flex-col items-center justify-center leading-none">
-              <span class="text-[13px] font-black tracking-tighter text-pink-300">RR</span>
-              <span class="text-[6.5px] font-bold tracking-widest text-sky-300 mt-0.5">ROYALS</span>
+      <!-- Center: Minimalist Geometric Crest + Brand Wordmark -->
+      <a href="#" class="flex items-center gap-2.5 group shrink-0">
+        <span class="w-7 h-7 rounded-full border-[1.75px] border-charcoal dark:border-white flex items-center justify-center transition-transform group-hover:rotate-12 text-[10px] font-mono font-bold">
+          RR
+        </span>
+        <span class="text-base sm:text-lg font-semibold tracking-tight">SupeRR Selector</span>
+      </a>
+
+      <!-- Right: Search Pill + Primary Black Pill CTA + Mobile Menu -->
+      <div class="flex items-center gap-2 sm:gap-2.5">
+        <div class="hidden sm:flex items-center bg-stonePill dark:bg-darkCard rounded-full pl-4 pr-1.5 py-1.5 w-48 lg:w-64 focus-within:ring-2 focus-within:ring-charcoal/20 dark:focus-within:ring-white/20 transition">
+          <input
+            id="globalSearch"
+            type="text"
+            placeholder="Find a player or team..."
+            class="bg-transparent text-xs sm:text-sm w-full focus:outline-none text-charcoal dark:text-white placeholder:text-slateMuted dark:placeholder:text-stone-400"
+            oninput="handleGlobalSearch(this.value)"
+          />
+          <button
+            onclick="document.getElementById('database').scrollIntoView({behavior:'smooth'})"
+            aria-label="Search players"
+            class="w-7 h-7 rounded-full bg-charcoal dark:bg-white text-white dark:text-charcoal flex items-center justify-center shrink-0 hover:opacity-90 transition cursor-pointer"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Primary Black Pill CTA -->
+        <button
+          onclick="openSimModal()"
+          class="inline-flex items-center gap-2.5 bg-charcoal dark:bg-white text-white dark:text-charcoal pl-4 pr-1.5 py-1.5 rounded-full text-xs sm:text-sm font-medium hover:opacity-90 transition cursor-pointer"
+        >
+          <span>What-If Lab</span>
+          <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white dark:bg-charcoal text-charcoal dark:text-white flex items-center justify-center">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path d="M7 17L17 7M17 7H8M17 7v9" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+        </button>
+
+        <!-- Clean Mobile Menu Button -->
+        <button
+          onclick="toggleMobileMenu()"
+          aria-label="Toggle menu"
+          class="md:hidden w-9 h-9 rounded-full bg-stonePill dark:bg-darkCard flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 transition cursor-pointer"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Dropdown -->
+    <div id="mobileMenu" class="hidden md:hidden px-4 pb-4 pt-2 border-t border-black/5 dark:border-white/5 bg-stoneBg dark:bg-darkBg">
+      <div class="flex flex-col gap-2">
+        <input type="text" placeholder="Find a player or team..." class="w-full px-4 py-2.5 rounded-full bg-stonePill dark:bg-darkCard text-sm focus:outline-none" oninput="handleGlobalSearch(this.value)" />
+        <div class="flex flex-wrap gap-2 pt-1">
+          <a href="#rankings" onclick="toggleMobileMenu()" class="px-4 py-2 rounded-full bg-stonePill dark:bg-darkCard text-sm font-medium">Rankings</a>
+          <a href="#analytics" onclick="toggleMobileMenu()" class="px-4 py-2 rounded-full bg-stonePill dark:bg-darkCard text-sm font-medium">Quadrants</a>
+          <a href="#method" onclick="toggleMobileMenu()" class="px-4 py-2 rounded-full bg-stonePill dark:bg-darkCard text-sm font-medium">Method</a>
+          <a href="#squad-fit" onclick="toggleMobileMenu()" class="px-4 py-2 rounded-full bg-stonePill dark:bg-darkCard text-sm font-medium">RR 2027</a>
+          <a href="#sandbox" onclick="toggleMobileMenu()" class="px-4 py-2 rounded-full bg-stonePill dark:bg-darkCard text-sm font-medium">Lab</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+
+    <!-- ==================== 2. FULL-BLEED EDITORIAL HERO ==================== -->
+    <section class="pt-4 sm:pt-6 pb-16 sm:pb-24">
+      <div class="relative w-full h-[520px] sm:h-[600px] lg:h-[640px] rounded-3xl overflow-hidden bg-charcoal shadow-sm">
+        <!-- Atmospheric Cricket Stadium Photography -->
+        <img
+          src="https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=1800&q=85"
+          onerror="this.src='https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=1800&q=85'"
+          alt="Cricket match under stadium lights"
+          class="w-full h-full object-cover object-center scale-[1.01]"
+        />
+        <!-- Smooth Dark Gradient Scrim (Bottom-Left) -->
+        <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/15"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-black/75 via-black/25 to-transparent"></div>
+
+        <!-- Subtle Top-Right Dataset Tag -->
+        <div class="absolute top-6 right-6 hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/35 backdrop-blur-md text-white/85 text-xs font-mono border border-white/10">
+          <span>200,999 DELIVERIES</span>
+          <span class="text-white/40">·</span>
+          <span>867 IPL &amp; T20I MATCHES</span>
+        </div>
+
+        <!-- Hero Content (Bottom-Left) -->
+        <div class="absolute inset-x-0 bottom-0 p-6 sm:p-10 lg:p-14 flex flex-col items-start max-w-2xl">
+          <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-white/90 text-xs font-mono tracking-wide mb-4">
+            <span class="w-1.5 h-1.5 rounded-full bg-rrAccent"></span>
+            RAJASTHAN ROYALS · SUPERR SELECTOR SEASON 2
+          </span>
+          <h1 class="text-3xl sm:text-5xl lg:text-[54px] font-semibold text-white tracking-tight leading-[1.07]">
+            Measure the pressure.<br />Strip out the noise.<br />Draft who delivers.
+          </h1>
+          <p class="mt-4 text-sm sm:text-base text-white/80 max-w-lg leading-relaxed">
+            A win-probability leverage and Empirical Bayes scouting framework auditing 2022–2026 IPL &amp; T20I deliveries—built for Rajasthan Royals' IPL 2027 war room.
+          </p>
+          <div class="mt-7 flex flex-wrap items-center gap-3">
+            <a
+              href="#rankings"
+              class="inline-flex items-center gap-2.5 bg-white text-charcoal pl-5 pr-2 py-2 rounded-full text-sm font-medium hover:bg-stone-100 transition shadow-sm"
+            >
+              <span>Explore Top 10</span>
+              <span class="w-7 h-7 rounded-full bg-charcoal text-white flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                  <path d="M7 17L17 7M17 7H8M17 7v9" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+            </a>
+            <button
+              onclick="copyUnstopList()"
+              class="px-5 py-2.5 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-md text-white text-sm font-medium transition cursor-pointer"
+            >
+              Copy Unstop Dropdowns
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 3. HORIZONTAL TOP-10 PLAYER CARDS TRACK ==================== -->
+    <section id="rankings" class="py-10 sm:py-16 scroll-mt-20">
+      <!-- Editorial Header Row + Live Mono Metrics -->
+      <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-8 sm:mb-10">
+        <div class="max-w-xl">
+          <h2 class="text-3xl sm:text-4xl lg:text-[46px] font-semibold tracking-tight leading-[1.1]">
+            This is pressure, not<br />a wall of averages
+          </h2>
+          <p class="mt-4 text-sm sm:text-base text-slateMuted dark:text-stone-400 leading-relaxed">
+            Ten verified batters and ten verified bowlers—exact match to the Unstop dropdowns. Click any card to inspect full radar splits, bootstrap confidence, and Jaipur fit.
+          </p>
+        </div>
+
+        <!-- Right-Aligned Summary Metrics -->
+        <div class="flex items-center gap-7 sm:gap-10 border-t lg:border-t-0 pt-5 lg:pt-0 border-black/10 dark:border-white/10">
+          <div>
+            <div class="text-xs font-mono text-slateMuted dark:text-stone-400 mb-1">High-Pressure</div>
+            <div class="text-2xl sm:text-3xl font-mono font-medium tracking-tight">
+              50,233 <span class="text-xs text-rrAccent font-normal">25%</span>
             </div>
           </div>
           <div>
-            <div class="text-sm font-black tracking-wide text-pink-300 leading-tight">RAJASTHAN ROYALS</div>
-            <div class="text-[10px] font-semibold tracking-wider text-slate-400 uppercase">IPL 2027 Strategy Hub</div>
+            <div class="text-xs font-mono text-slateMuted dark:text-stone-400 mb-1">Eligible Pool</div>
+            <div class="text-2xl sm:text-3xl font-mono font-medium tracking-tight">
+              85<span class="text-slateMuted dark:text-stone-500">/96</span>
+            </div>
           </div>
-        </a>
-
-        <!-- Scroll-Spy Navigation -->
-        <nav class="space-y-1.5 text-sm font-medium">
-          <a href="#sec-overview" data-nav="sec-overview" class="nav-item active flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-300 hover:text-white">
-            <i data-lucide="home" class="w-4 h-4 shrink-0"></i><span>Overview</span>
-          </a>
-          <a href="#sec-purse" data-nav="sec-purse" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-300 hover:text-white">
-            <i data-lucide="wallet" class="w-4 h-4 shrink-0"></i><span>Purse Tracker</span>
-          </a>
-          <a href="#sec-scouting" data-nav="sec-scouting" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-300 hover:text-white">
-            <i data-lucide="users" class="w-4 h-4 shrink-0"></i><span>Player Scouting</span>
-          </a>
-          <a href="#sec-squad" data-nav="sec-squad" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-300 hover:text-white">
-            <i data-lucide="shield" class="w-4 h-4 shrink-0"></i><span>Squad Builder</span>
-          </a>
-          <a href="#sec-models" data-nav="sec-models" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-300 hover:text-white">
-            <i data-lucide="cpu" class="w-4 h-4 shrink-0"></i><span>Data Models</span>
-          </a>
-          <a href="#sec-report" data-nav="sec-report" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-300 hover:text-white">
-            <i data-lucide="file-text" class="w-4 h-4 shrink-0"></i><span>Hackathon Report</span>
-          </a>
-        </nav>
-
-        <!-- Section Indicator Dots -->
-        <div class="px-3.5 pt-2 flex items-center gap-2">
-          <span class="text-[10px] font-mono uppercase tracking-widest text-slate-500">Scroll Journey</span>
-          <div class="flex gap-1.5" id="sidebar-dots">
-            <span data-dot="sec-overview" class="w-2 h-2 rounded-full bg-pink-500 transition-all"></span>
-            <span data-dot="sec-purse" class="w-1.5 h-1.5 rounded-full bg-slate-600 transition-all"></span>
-            <span data-dot="sec-scouting" class="w-1.5 h-1.5 rounded-full bg-slate-600 transition-all"></span>
-            <span data-dot="sec-squad" class="w-1.5 h-1.5 rounded-full bg-slate-600 transition-all"></span>
-            <span data-dot="sec-models" class="w-1.5 h-1.5 rounded-full bg-slate-600 transition-all"></span>
-            <span data-dot="sec-report" class="w-1.5 h-1.5 rounded-full bg-slate-600 transition-all"></span>
+          <div>
+            <div class="text-xs font-mono text-slateMuted dark:text-stone-400 mb-1">2nd-Inn Brier</div>
+            <div class="text-2xl sm:text-3xl font-mono font-medium tracking-tight">0.1298</div>
           </div>
         </div>
       </div>
 
-      <!-- Bottom Quick Controls -->
-      <div class="space-y-2.5 pt-4 border-t border-white/10">
-        <button onclick="copyUnstopList()" class="w-full py-2 px-3 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-pink-600 to-indigo-600 hover:from-pink-500 hover:to-indigo-500 shadow-lg shadow-pink-600/25 flex items-center justify-center gap-2 cursor-pointer transition-all">
-          <i data-lucide="clipboard-copy" class="w-3.5 h-3.5"></i> Copy Top-10 Lists
-        </button>
-        <button onclick="toggleTheme()" id="theme-btn" class="w-full py-2 px-3 rounded-xl text-xs font-semibold text-slate-300 bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center gap-2 cursor-pointer">
-          <i data-lucide="sun" class="w-3.5 h-3.5 text-amber-300"></i> Switch to Light Mode
-        </button>
+      <!-- Filter Pills + Methodology Pill -->
+      <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div class="flex flex-wrap items-center gap-2" id="trackPills">
+          <button onclick="setTrack('bat10')" data-track="bat10" class="track-pill px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition cursor-pointer bg-charcoal text-white dark:bg-white dark:text-charcoal">Top 10 Batters</button>
+          <button onclick="setTrack('bowl10')" data-track="bowl10" class="track-pill px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition cursor-pointer bg-stonePill text-charcoal dark:bg-darkCard dark:text-stone-300 hover:bg-black/10">Top 10 Bowlers</button>
+          <button onclick="setTrack('runners')" data-track="runners" class="track-pill px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition cursor-pointer bg-stonePill text-charcoal dark:bg-darkCard dark:text-stone-300 hover:bg-black/10">Runners-Up (#11–#15)</button>
+          <button onclick="setTrack('gems')" data-track="gems" class="track-pill px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition cursor-pointer bg-stonePill text-charcoal dark:bg-darkCard dark:text-stone-300 hover:bg-black/10">RR Watchlist Gems</button>
+        </div>
+
+        <div id="trackBadge" class="text-xs font-mono text-slateMuted dark:text-stone-400 bg-stonePill dark:bg-darkCard px-3.5 py-1.5 rounded-full">
+          PI ≥ 60 · Empirical Bayes k=120 · ≥150 HP Balls &amp; ≥15 Inns
+        </div>
       </div>
-    </aside>
 
-    <!-- MAIN CONTINUOUS SCROLL CONTENT -->
-    <div class="flex-1 lg:ml-60 min-w-0">
+      <!-- Horizontal Snap-Scroll Player Cards (FitIQ signature pattern!) -->
+      <div id="playerTrackContainer" class="track-scroll flex gap-4 sm:gap-5 overflow-x-auto pb-6 snap-x snap-mandatory">
+        <!-- Populated dynamically -->
+      </div>
+    </section>
 
-      <!-- TOP BAR -->
-      <header class="sticky top-0 z-30 backdrop-blur-xl bg-[#070B14]/75 border-b border-white/10 px-5 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div class="flex items-center gap-2.5">
-            <span class="text-lg sm:text-xl font-black tracking-wide text-pink-300">RAJASTHAN ROYALS</span>
-            <span class="hidden md:inline text-slate-600">|</span>
-            <span id="decrypt-sub" class="hidden md:inline text-xs font-semibold tracking-widest uppercase text-sky-300/90">IPL 2027 PRESSURE &amp; AUCTION STRATEGY DASHBOARD</span>
+    <!-- ==================== 4. INTERACTIVE QUADRANTS & CALIBRATION ==================== -->
+    <section id="analytics" class="py-12 sm:py-20 scroll-mt-20 border-t border-black/[0.06] dark:border-white/[0.08]">
+      <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10">
+        <div class="max-w-xl">
+          <span class="text-xs font-mono uppercase tracking-widest text-slateMuted dark:text-stone-400">Empirical Proof</span>
+          <h2 class="mt-2 text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.12]">
+            Who rises when the win probability swings
+          </h2>
+        </div>
+        <div class="inline-flex items-center gap-1.5 bg-stonePill dark:bg-darkCard p-1 rounded-full self-start">
+          <button onclick="setChartRole('bat')" id="cr-bat" class="px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium bg-charcoal text-white dark:bg-white dark:text-charcoal transition cursor-pointer">Batters (85)</button>
+          <button onclick="setChartRole('bowl')" id="cr-bowl" class="px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium text-charcoal dark:text-stone-300 transition cursor-pointer">Bowlers (96)</button>
+        </div>
+      </div>
+
+      <!-- 2x2 Editorial Chart Grid (Clean white cards, zero glow) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div class="lg:col-span-7 bg-white dark:bg-darkCard rounded-card p-6 sm:p-7 border border-black/[0.05] dark:border-white/[0.06]">
+          <div class="flex items-start justify-between gap-3 mb-2">
+            <div>
+              <h3 id="quad-title" class="text-lg font-semibold tracking-tight">Usual Baseline vs. High-Pressure Impact</h3>
+              <p class="text-xs text-slateMuted dark:text-stone-400 mt-0.5">Above the diagonal parity line = elevates under pressure. Bubble size = HP balls faced.</p>
+            </div>
+            <span class="text-[11px] font-mono px-2.5 py-1 rounded-full bg-stonePill dark:bg-darkRest text-slateMuted dark:text-stone-300 shrink-0">EB / 100b</span>
           </div>
-          <!-- Mobile quick-scroll links -->
-          <div class="flex lg:hidden items-center gap-2 mt-2 overflow-x-auto text-[11px] font-bold">
-            <a href="#sec-overview" class="px-2.5 py-1 rounded-lg bg-pink-600/25 text-pink-300">Overview</a>
-            <a href="#sec-purse" class="px-2.5 py-1 rounded-lg bg-white/5 text-slate-300">Purse</a>
-            <a href="#sec-scouting" class="px-2.5 py-1 rounded-lg bg-white/5 text-slate-300">Scouting</a>
-            <a href="#sec-squad" class="px-2.5 py-1 rounded-lg bg-white/5 text-slate-300">Squad XI</a>
-            <a href="#sec-models" class="px-2.5 py-1 rounded-lg bg-white/5 text-slate-300">Models</a>
-            <a href="#sec-report" class="px-2.5 py-1 rounded-lg bg-white/5 text-slate-300">Report</a>
+          <div id="chart-quadrant" class="w-full h-[380px]"></div>
+        </div>
+
+        <div class="lg:col-span-5 bg-white dark:bg-darkCard rounded-card p-6 sm:p-7 border border-black/[0.05] dark:border-white/[0.06]">
+          <div class="flex items-start justify-between gap-3 mb-2">
+            <div>
+              <h3 id="boot-title" class="text-lg font-semibold tracking-tight">1,000x Match-Level Bootstrap (90% CI)</h3>
+              <p class="text-xs text-slateMuted dark:text-stone-400 mt-0.5">Every Top-10 pick clears ≥92.7% positive-impact probability across whole matches.</p>
+            </div>
+            <span class="text-[11px] font-mono px-2.5 py-1 rounded-full bg-stonePill dark:bg-darkRest text-slateMuted dark:text-stone-300 shrink-0">seed=42</span>
+          </div>
+          <div id="chart-bootstrap" class="w-full h-[380px]"></div>
+        </div>
+
+        <div class="lg:col-span-6 bg-white dark:bg-darkCard rounded-card p-6 sm:p-7 border border-black/[0.05] dark:border-white/[0.06]">
+          <div class="mb-2">
+            <h3 class="text-lg font-semibold tracking-tight">Empirical Proof: Match Outcomes Shift Under Pressure</h3>
+            <p class="text-xs text-slateMuted dark:text-stone-400 mt-0.5">Across 200,999 balls, High Pressure (PI ≥ 60) triggers a +28% wicket surge (5.17% → 6.77%).</p>
+          </div>
+          <div id="chart-calibration" class="w-full h-[290px]"></div>
+        </div>
+
+        <div class="lg:col-span-6 bg-white dark:bg-darkCard rounded-card p-6 sm:p-7 border border-black/[0.05] dark:border-white/[0.06]">
+          <div class="mb-2">
+            <h3 class="text-lg font-semibold tracking-tight">What Triggers High Pressure? (Not Just Overs 16–20)</h3>
+            <p class="text-xs text-slateMuted dark:text-stone-400 mt-0.5">Balanced across Collapses (43.0%), Live Chases (39.0%), and 1st-Inn Death (17.3%).</p>
+          </div>
+          <div id="chart-drivers" class="w-full h-[290px]"></div>
+        </div>
+      </div>
+
+      <!-- FULL SEARCHABLE AUDITED TABLE -->
+      <div id="database" class="mt-6 bg-white dark:bg-darkCard rounded-card p-6 sm:p-7 border border-black/[0.05] dark:border-white/[0.06] scroll-mt-24">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div>
+            <h3 class="text-lg font-semibold tracking-tight">Complete Audited Database (181 Eligible Players)</h3>
+            <p class="text-xs text-slateMuted dark:text-stone-400 mt-0.5">Click any row to open the player's full scouting drawer.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="inline-flex bg-stonePill dark:bg-darkRest p-1 rounded-full text-xs">
+              <button onclick="setTableRole('bat')" id="tb-bat" class="px-3.5 py-1 rounded-full bg-charcoal text-white dark:bg-white dark:text-charcoal font-medium cursor-pointer">Batters (85)</button>
+              <button onclick="setTableRole('bowl')" id="tb-bowl" class="px-3.5 py-1 rounded-full text-charcoal dark:text-stone-300 font-medium cursor-pointer">Bowlers (96)</button>
+            </div>
+            <input id="tableSearch" oninput="renderDatabaseTable()" type="text" placeholder="Filter name or IPL team..." class="px-4 py-1.5 rounded-full bg-stonePill dark:bg-darkRest text-xs focus:outline-none w-48" />
           </div>
         </div>
-        <div class="flex items-center gap-2.5">
-          <div class="px-3.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[11px] font-mono tracking-wider text-slate-300">
-            <span class="text-slate-400">SUPERR SELECTOR S2</span> <span class="text-pink-400 font-bold">| CRICKET ANALYTICS HACKATHON</span>
-          </div>
+        <div class="track-scroll overflow-x-auto max-h-[380px]">
+          <table class="w-full text-left border-collapse text-xs sm:text-[13px]">
+            <thead id="db-head" class="sticky top-0 bg-white dark:bg-darkCard text-slateMuted dark:text-stone-400 font-mono text-[11px] uppercase border-b border-black/10 dark:border-white/10"></thead>
+            <tbody id="db-body" class="divide-y divide-black/[0.05] dark:divide-white/[0.06]"></tbody>
+          </table>
         </div>
-      </header>
+      </div>
+    </section>
 
-      <main class="max-w-[1360px] mx-auto px-5 sm:px-8 py-7 space-y-16">
-
-        <!-- =============================================================== -->
-        <!-- SECTION 1: OVERVIEW (Matches ref_01 & ref_08!) -->
-        <!-- =============================================================== -->
-        <section id="sec-overview" class="reveal-section visible space-y-5 scroll-mt-20">
-          <!-- 4 KPI ROW -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <!-- Card 1: Audited Deliveries + Progress Bar -->
-            <div class="glass-card p-5">
-              <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">AUDITED DATA VOLUME</div>
-              <div class="text-3xl font-extrabold mt-1.5 font-mono tracking-tight">200,999 <span class="text-sm font-semibold text-pink-400">Balls</span></div>
-              <div class="w-full h-1.5 rounded-full bg-white/10 mt-3 overflow-hidden">
-                <div class="h-full rounded-full bg-gradient-to-r from-pink-500 to-sky-400" style="width: 100%"></div>
-              </div>
-              <div class="text-[11px] text-slate-400 mt-2">867 IPL &amp; T20I Matches • 2022–2026</div>
+    <!-- ==================== 5. EDITORIAL FEATURE SECTION (METHOD & BUMRAH CASE STUDY) ==================== -->
+    <section id="method" class="py-16 sm:py-24 scroll-mt-20 border-t border-black/[0.06] dark:border-white/[0.08]">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
+        <!-- Left: Clean Data Hygiene & Formula Architecture Card -->
+        <div class="lg:col-span-6 space-y-5">
+          <div class="rounded-[24px] bg-white dark:bg-darkCard p-7 sm:p-9 border border-black/[0.05] dark:border-white/[0.06] space-y-6">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono uppercase tracking-widest text-slateMuted dark:text-stone-400">Formula Architecture</span>
+              <span class="text-xs font-mono text-rrAccent font-medium">Zero Reputation Overrides</span>
             </div>
 
-            <!-- Card 2: High-Pressure Share + Circular Ring Gauge -->
-            <div class="glass-card p-5 flex items-center justify-between gap-3">
-              <div>
-                <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">HIGH-PRESSURE TIER</div>
-                <div class="text-3xl font-extrabold mt-1.5 font-mono">50,233</div>
-                <div class="text-[11px] text-slate-400 mt-2">PI ≥ 60 Top Quartile • <span class="text-pink-400 font-semibold">+28% Wkts</span></div>
-              </div>
-              <div class="relative w-16 h-16 shrink-0 flex items-center justify-center">
-                <svg class="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
-                  <circle cx="32" cy="32" r="25" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>
-                  <circle cx="32" cy="32" r="25" fill="none" stroke="url(#gradRing1)" stroke-width="6" stroke-linecap="round" stroke-dasharray="157" stroke-dashoffset="117.7"/>
-                  <defs><linearGradient id="gradRing1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#EC2B82"/><stop offset="100%" stop-color="#4F7DF3"/></linearGradient></defs>
-                </svg>
-                <span class="absolute text-xs font-black font-mono">25%</span>
-              </div>
+            <div class="space-y-3 font-mono text-xs bg-stoneBg dark:bg-darkRest p-5 rounded-2xl leading-relaxed">
+              <div><span class="text-slateMuted dark:text-stone-400">01 /</span> I_bat  = (Runs - xRuns) - V_w · (Out - xWkt)</div>
+              <div><span class="text-slateMuted dark:text-stone-400">02 /</span> I_bowl = (xRuns - Runs) + V_w · (Wkt - xWkt)</div>
+              <div><span class="text-slateMuted dark:text-stone-400">03 /</span> HP_EB  = 100 · Σ(w·I) / (Σw + 120)</div>
+              <div><span class="text-slateMuted dark:text-stone-400">04 /</span> Resil  = HP_EB - max(0, Norm_EB)</div>
+              <div class="text-rrAccent font-semibold"><span class="text-slateMuted dark:text-stone-400">05 /</span> PRR    = 50 + 15·(0.60·z_HP + 0.20·z_Res + 0.20·z_Cons)</div>
             </div>
 
-            <!-- Card 3: Bootstrap Reliability + Trend Sparkline -->
-            <div class="glass-card p-5">
-              <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">TOP-10 BOOTSTRAP CONFIDENCE</div>
-              <div class="flex items-center gap-2.5 mt-1.5">
-                <span class="text-3xl font-extrabold font-mono">98.4%</span>
-                <svg class="w-11 h-6" viewBox="0 0 44 24" fill="none">
-                  <path d="M2 20 L12 14 L20 16 L32 6 L42 3" stroke="#E55A95" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M36 3 H42 V9" stroke="#E55A95" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
-              <div class="text-[11px] text-slate-400 mt-2">Avg P(Impact &gt; 0) • 1,000x Match Resamples</div>
-            </div>
-
-            <!-- Card 4: Model Status Glowing Pill -->
-            <div class="glass-card p-5 flex flex-col justify-between">
-              <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">WIN-PROB PRESSURE ENGINE</div>
-              <div class="my-2">
-                <span class="pill-optimized inline-flex items-center gap-2 px-5 py-1.5 rounded-full text-lg font-bold tracking-wide">
-                  Optimized
-                </span>
-              </div>
-              <div class="text-[11px] text-slate-400">2nd-Inn Brier: <span class="font-mono text-sky-300 font-bold">0.1298</span> • 85 Bat / 96 Bowl</div>
-            </div>
-          </div>
-
-          <!-- MIDDLE ROW: RADAR CHART + CLUTCH VALUE SCATTER -->
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            <div class="lg:col-span-5 glass-card p-5">
-              <div class="flex items-center justify-between mb-1">
-                <div>
-                  <h2 class="text-sm sm:text-base font-bold">Projected Squad Pressure Balance vs. Core Needs</h2>
-                  <p class="text-[11px] text-slate-400">Dual-layer overlay: Top-10 Picks (Pink) vs. RR 2027 Target Benchmark (Blue)</p>
-                </div>
-              </div>
-              <div id="ov-radar" class="w-full h-[270px]"></div>
-            </div>
-            <div class="lg:col-span-7 glass-card p-5">
-              <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
-                <div>
-                  <h2 class="text-sm sm:text-base font-bold">Clutch Impact vs. Usual Baseline Assessment</h2>
-                  <p class="text-[11px] text-slate-400">All 181 audited players • Pink = Top-10 Clutch Picks • Hover for exact stats</p>
-                </div>
-                <div class="flex items-center gap-1.5 text-[11px]">
-                  <button onclick="setOvScatter('bat')" id="ov-sc-bat" class="px-2.5 py-1 rounded-lg bg-pink-600/30 border border-pink-500/60 text-pink-200 font-bold cursor-pointer">Batters (85)</button>
-                  <button onclick="setOvScatter('bowl')" id="ov-sc-bowl" class="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300 font-bold cursor-pointer">Bowlers (96)</button>
-                </div>
-              </div>
-              <div id="ov-scatter" class="w-full h-[270px]"></div>
-            </div>
-          </div>
-
-          <!-- BOTTOM ROW: TARGET PLAYER PRIORITY MATRIX + COMPOSITION DONUT -->
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            <div class="lg:col-span-8 glass-card p-5 space-y-3">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <div class="flex items-center gap-2.5">
-                  <h2 class="text-xs sm:text-sm font-bold uppercase tracking-wider">OFFICIAL TOP-10 PRIORITY MATRIX (UNSTOP EXACT MATCH)</h2>
-                  <div class="inline-flex rounded-lg bg-black/30 p-0.5 border border-white/10 text-[11px]">
-                    <button onclick="setMatrixRole('bat')" id="mx-bat" class="px-2.5 py-1 rounded-md bg-pink-600 text-white font-bold cursor-pointer">Batters</button>
-                    <button onclick="setMatrixRole('bowl')" id="mx-bowl" class="px-2.5 py-1 rounded-md text-slate-300 font-bold cursor-pointer">Bowlers</button>
-                  </div>
-                </div>
-                <input id="mx-search" oninput="renderPriorityMatrix()" type="text" placeholder="Search player..." class="bg-black/30 border border-white/15 rounded-lg px-3 py-1 text-xs focus:outline-none focus:border-pink-500 w-44" />
-              </div>
-              <div class="overflow-x-auto max-h-[260px]">
-                <table class="w-full text-left text-xs border-collapse">
-                  <thead id="mx-head" class="sticky top-0 bg-[#0D1326] text-slate-400 text-[10.5px] uppercase border-b border-white/10"></thead>
-                  <tbody id="mx-body" class="divide-y divide-white/5"></tbody>
-                </table>
-              </div>
-            </div>
-
-            <div class="lg:col-span-4 glass-card p-5 flex flex-col justify-between">
-              <div>
-                <h2 class="text-xs sm:text-sm font-bold uppercase tracking-wider">HIGH-PRESSURE SITUATION BREAKDOWN</h2>
-                <p class="text-[11px] text-slate-400 mt-0.5">50,233 audited balls — not just death overs</p>
-              </div>
-              <div id="ov-donut" class="w-full h-[230px]"></div>
-            </div>
-          </div>
-
-          <div class="text-right">
-            <a href="#sec-purse" class="inline-flex items-center gap-1.5 text-[11px] font-mono tracking-widest text-slate-400 hover:text-pink-400 transition-colors">
-              SCROLL FOR PURSE TRACKER &amp; AUCTION VALUATION <i data-lucide="chevron-down" class="w-3.5 h-3.5 animate-bounce"></i>
-            </a>
-          </div>
-        </section>
-
-        <!-- =============================================================== -->
-        <!-- SECTION 2: PURSE TRACKER & IPL 2027 AUCTION STRATEGY (ref_03) -->
-        <!-- =============================================================== -->
-        <section id="sec-purse" class="reveal-section space-y-5 pt-4 border-t border-white/10 scroll-mt-20">
-          <div class="flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <span class="text-[10.5px] font-mono uppercase tracking-[0.22em] text-pink-400 font-bold">Section 02 • IPL 2027 Auction Economics</span>
-              <h2 class="text-xl sm:text-2xl font-black tracking-tight mt-0.5">Purse Tracker &amp; Sawai Mansingh Valuation Strategy</h2>
-            </div>
-            <span class="text-xs text-slate-400">Simulated ₹42.50 Cr Remaining Purse • Linked live to your Squad Builder targets</span>
-          </div>
-
-          <!-- 5 KPI CARDS (Matches ref_03!) -->
-          <div class="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
-            <div class="glass-card p-4">
-              <div class="text-[10.5px] uppercase text-slate-400 font-semibold">REMAINING PURSE</div>
-              <div id="p-rem" class="text-2xl font-extrabold font-mono mt-1">₹42.50 Cr</div>
-              <div class="w-full h-1.5 rounded-full bg-white/10 mt-2.5 overflow-hidden">
-                <div id="p-bar" class="h-full bg-gradient-to-r from-pink-500 to-sky-400" style="width: 64%"></div>
-              </div>
-              <div id="p-spent-sub" class="text-[10px] text-slate-400 mt-1.5">Retained: ₹77.50 Cr / ₹120 Cr</div>
-            </div>
-            <div class="glass-card p-4">
-              <div class="text-[10.5px] uppercase text-slate-400 font-semibold">TOTAL AUCTION CAP</div>
-              <div class="text-2xl font-extrabold font-mono mt-1">₹120.00 Cr</div>
-              <div class="text-[10px] text-slate-400 mt-3">IPL 2027 Franchise Purse Cap</div>
-            </div>
-            <div class="glass-card p-4 flex items-center justify-between gap-2">
-              <div>
-                <div class="text-[10.5px] uppercase text-slate-400 font-semibold">TARGET SPEND</div>
-                <div id="p-cart-cost" class="text-2xl font-extrabold font-mono mt-1 text-pink-300">₹28.0 Cr</div>
-                <div id="p-cart-cnt" class="text-[10px] text-slate-400 mt-1">4 Core Targets</div>
-              </div>
-              <div class="relative w-12 h-12 flex items-center justify-center shrink-0">
-                <svg class="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
-                  <circle cx="24" cy="24" r="19" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4.5"/>
-                  <circle id="p-ring" cx="24" cy="24" r="19" fill="none" stroke="#EC2B82" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="119.4" stroke-dashoffset="40"/>
-                </svg>
-                <span id="p-ring-lbl" class="absolute text-[9.5px] font-bold font-mono">66%</span>
-              </div>
-            </div>
-            <div class="glass-card p-4">
-              <div class="text-[10.5px] uppercase text-slate-400 font-semibold">AVG TARGET PRR</div>
-              <div id="p-avg-prr" class="text-2xl font-extrabold font-mono mt-1 text-sky-300">73.0</div>
-              <div class="text-[10px] text-emerald-400 mt-2 font-semibold">+23.0 above pool par (50.0)</div>
-            </div>
-            <div class="glass-card p-4 flex flex-col justify-between">
-              <div class="text-[10.5px] uppercase text-slate-400 font-semibold">BUDGET EFFICIENCY</div>
-              <div class="my-1"><span id="p-eff-pill" class="pill-optimized inline-block px-4 py-1 rounded-full text-sm font-bold">Optimal</span></div>
-              <div class="text-[10px] text-slate-400">High PRR per Crore ROI</div>
-            </div>
-          </div>
-
-          <!-- CHARTS ROW: CUMULATIVE SPEND AREA + ROLE EXPENDITURE BARS -->
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            <div class="lg:col-span-6 glass-card p-5">
-              <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider">CUMULATIVE AUCTION SPEND VS. TARGET PRR TIER</h3>
-              <p class="text-[11px] text-slate-400 mb-1">Layered purse burn curve across Priority, Value, and Watchlist rounds</p>
-              <div id="purse-area-chart" class="w-full h-[250px]"></div>
-            </div>
-            <div class="lg:col-span-6 glass-card p-5">
-              <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider">ESTIMATED VALUATION BY TACTICAL ARCHETYPE (₹ CR)</h3>
-              <p class="text-[11px] text-slate-400 mb-1">Comparing Market Cap vs. RR Optimal Target Bracket for Sawai Mansingh fit</p>
-              <div id="purse-bar-chart" class="w-full h-[250px]"></div>
-            </div>
-          </div>
-
-          <!-- VALUATION MATRIX + ALLOCATION DONUT -->
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            <div class="lg:col-span-8 glass-card p-5 space-y-3">
-              <div class="flex items-center justify-between">
-                <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider">RR 2027 TARGET VALUATION &amp; VALUE-OVER-COST MATRIX</h3>
-                <span class="text-[11px] text-pink-400 font-semibold">Click any row to toggle in Squad Purse</span>
-              </div>
-              <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs border-collapse">
-                  <thead class="bg-[#0D1326] text-slate-400 text-[10.5px] uppercase border-b border-white/10">
-                    <tr><th class="p-2.5">Target Player</th><th class="p-2.5">RR Tactical Role</th><th class="p-2.5 text-right">PRR</th><th class="p-2.5 text-right">Est. Bracket</th><th class="p-2.5">Pressure Evidence</th><th class="p-2.5 text-center">Priority</th></tr>
-                  </thead>
-                  <tbody id="purse-table-body" class="divide-y divide-white/5"></tbody>
-                </table>
-              </div>
-            </div>
-            <div class="lg:col-span-4 glass-card p-5 flex flex-col justify-between">
-              <div>
-                <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider">BUDGET ALLOCATION BREAKDOWN</h3>
-                <p class="text-[11px] text-slate-400">Share of targeted auction purse by role</p>
-              </div>
-              <div id="purse-donut" class="w-full h-[240px]"></div>
-            </div>
-          </div>
-        </section>
-
-        <!-- =============================================================== -->
-        <!-- SECTION 3: PLAYER SCOUTING & WATCHLIST (Matches ref_07!) -->
-        <!-- =============================================================== -->
-        <section id="sec-scouting" class="reveal-section space-y-5 pt-4 border-t border-white/10 scroll-mt-20">
-          <div class="flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <span class="text-[10.5px] font-mono uppercase tracking-[0.22em] text-sky-400 font-bold">Section 03 • Complete 181-Player Scouting Hub</span>
-              <h2 class="text-xl sm:text-2xl font-black tracking-tight mt-0.5">Player Scouting, Runs Saved &amp; "Vignesh Puthur" Watchlist</h2>
-            </div>
-            <span class="text-xs text-slate-400">Click any player card or row to open the full 5-axis Radar Scouting Modal</span>
-          </div>
-
-          <!-- 4 SCOUTING KPIs -->
-          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-            <div class="glass-card p-4">
-              <div class="text-[10.5px] uppercase text-slate-400 font-semibold">ELIGIBLE SCOUTED POOL</div>
-              <div class="text-2xl sm:text-3xl font-extrabold font-mono mt-1">181 Players</div>
-              <div class="text-[11px] text-slate-400 mt-1.5">85 Batters • 96 Bowlers (≥150 HP balls)</div>
-            </div>
-            <div class="glass-card p-4">
-              <div class="text-[10.5px] uppercase text-slate-400 font-semibold">EMERGING GEM WATCHLIST</div>
-              <div class="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-pink-400">11 Gems</div>
-              <div class="text-[11px] text-slate-400 mt-1.5">75–149 HP Balls • High-Ceiling Alerts</div>
-            </div>
-            <div class="glass-card p-4">
-              <div class="text-[10.5px] uppercase text-slate-400 font-semibold">SCOUTING COVERAGE</div>
-              <div class="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-sky-300">100%</div>
-              <div class="text-[11px] text-slate-400 mt-1.5">5 IPL Seasons + 482 T20I Fixtures</div>
-            </div>
-            <div class="glass-card p-4">
-              <div class="text-[10.5px] uppercase text-slate-400 font-semibold">SHRINKAGE FILTER</div>
-              <div class="text-2xl sm:text-3xl font-extrabold font-mono mt-1">k = 120</div>
-              <div class="text-[11px] text-pink-300 mt-1.5 font-semibold">Empirical Bayes Active</div>
-            </div>
-          </div>
-
-          <!-- DUAL CHARTS: TOP 15 BATTERS PRR + TOP 15 BOWLERS ECON SAVED -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div class="glass-card p-5">
-              <h3 class="text-sm font-bold">Top 15 Batters — Pressure Reliability Rating (PRR)</h3>
-              <p class="text-[11px] text-slate-400 mb-1">Pink = Top 3 • Blue = Ranks #4–#10 • Slate = Runners-Up #11–#15</p>
-              <div id="sc-bat-bar" class="w-full h-[350px]"></div>
-            </div>
-            <div class="glass-card p-5">
-              <h3 class="text-sm font-bold">Top 15 Bowlers — Runs Saved per Over Under Pressure</h3>
-              <p class="text-[11px] text-slate-400 mb-1">Amber bar highlights Jasprit Bumrah (#11 — +1.87 saved/over Baseline Compression Case Study)</p>
-              <div id="sc-bowl-bar" class="w-full h-[350px]"></div>
-            </div>
-          </div>
-
-          <!-- FULL SEARCHABLE EXPLORER + VIGNESH PUTHUR WATCHLIST -->
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            <div class="lg:col-span-8 glass-card p-5 space-y-3">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider">FULL AUDITED SCOUTING DATABASE</h3>
-                <div class="flex flex-wrap items-center gap-2">
-                  <div class="inline-flex rounded-lg bg-black/30 p-0.5 border border-white/10 text-[11px]">
-                    <button id="exp-bat-btn" onclick="setExplorerMode('bat')" class="px-2.5 py-1 rounded bg-pink-600 text-white font-bold cursor-pointer">Batters (85)</button>
-                    <button id="exp-bowl-btn" onclick="setExplorerMode('bowl')" class="px-2.5 py-1 rounded text-slate-300 font-bold cursor-pointer">Bowlers (96)</button>
-                  </div>
-                  <input id="exp-search" oninput="renderExplorerTable()" type="text" placeholder="Filter name or team..." class="bg-black/30 border border-white/15 rounded-lg px-3 py-1 text-xs focus:outline-none focus:border-pink-500 w-44" />
-                </div>
-              </div>
-              <div class="overflow-x-auto max-h-[340px]">
-                <table class="w-full text-left text-xs border-collapse">
-                  <thead id="exp-thead" class="sticky top-0 bg-[#0D1326] text-slate-400 text-[10px] uppercase border-b border-white/10"></thead>
-                  <tbody id="exp-tbody" class="divide-y divide-white/5"></tbody>
-                </table>
-              </div>
-            </div>
-
-            <div class="lg:col-span-4 glass-card p-5 space-y-3 border-pink-500/25">
-              <div>
-                <span class="text-[10px] font-mono uppercase tracking-wider text-teal-400 font-bold">Season 1 "Vignesh Puthur" Lesson</span>
-                <h3 class="text-sm font-bold mt-0.5">High-Ceiling Watchlist (75–149 HP Balls)</h3>
-                <p class="text-[11px] text-slate-400">Pre-breakout gems just below our 150-ball cutoff</p>
-              </div>
-              <div id="sc-gems-list" class="space-y-2 max-h-[300px] overflow-y-auto pr-1"></div>
-            </div>
-          </div>
-        </section>
-
-        <!-- =============================================================== -->
-        <!-- SECTION 4: SQUAD BUILDER & PLAYING XI VISUALIZER (Matches ref_09!) -->
-        <!-- =============================================================== -->
-        <section id="sec-squad" class="reveal-section space-y-5 pt-4 border-t border-white/10 scroll-mt-20">
-          <div class="flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <span class="text-[10.5px] font-mono uppercase tracking-[0.22em] text-pink-400 font-bold">Section 04 • Interactive Jaipur War Room</span>
-              <h2 class="text-xl sm:text-2xl font-black tracking-tight mt-0.5">Squad Builder &amp; Interactive Playing XI Pitch Visualizer</h2>
-            </div>
-            <button onclick="resetXI()" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-bold cursor-pointer">
-              Reset Recommended RR 2027 XI
-            </button>
-          </div>
-
-          <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 items-stretch">
-            <!-- LEFT: SQUAD POOL & BENCH (from ref_09) -->
-            <div class="xl:col-span-3 glass-card p-4 flex flex-col justify-between space-y-3">
-              <div class="space-y-2.5">
-                <div class="text-xs font-bold uppercase tracking-wider text-slate-300">SQUAD POOL &amp; BENCH</div>
-                <input id="bench-search" oninput="renderBench()" type="text" placeholder="Search target to swap in..." class="w-full bg-black/30 border border-white/15 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-pink-500" />
-                <div class="text-[10.5px] text-slate-400">
-                  <span id="swap-hint" class="text-sky-300 font-semibold">Click "Swap" on any Pitch slot, then click "+ Add" below.</span>
-                </div>
-                <div id="bench-list" class="space-y-2 max-h-[430px] overflow-y-auto pr-1"></div>
-              </div>
-            </div>
-
-            <!-- CENTER: 3D PERSPECTIVE PLAYING XI PITCH VISUALIZER (from ref_09!) -->
-            <div class="xl:col-span-6 glass-card p-4 space-y-3">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <div class="text-xs font-bold uppercase tracking-wider text-sky-300">PLAYING XI VISUALIZER — SAWAI MANSINGH STADIUM</div>
-                <div class="flex items-center gap-3 text-xs font-mono">
-                  <span>XI Strength: <strong id="xi-strength" class="text-pink-400">74.2</strong></span>
-                  <span>Overseas: <strong id="xi-os" class="text-sky-300">4 / 4</strong></span>
-                </div>
-              </div>
-              <div class="pitch-stage">
-                <div class="pitch-field p-3.5 sm:p-4 space-y-3">
-                  <div class="pitch-oval"></div>
-                  <div class="pitch-strip"></div>
-                  <!-- 4 Tactical Formation Rows (Openers, Middle, Finishers/AR, Bowling Unit) -->
-                  <div id="pitch-xi-grid" class="relative z-10 space-y-2.5"></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- RIGHT: SQUAD BALANCE RADAR + AI TACTICAL SUGGESTIONS -->
-            <div class="xl:col-span-3 flex flex-col gap-4">
-              <div class="glass-card p-4 flex-1">
-                <div class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">XI PRESSURE BALANCE</div>
-                <div id="xi-radar" class="w-full h-[220px]"></div>
-              </div>
-              <div class="glass-card p-4 border-pink-500/45 shadow-[0_0_24px_rgba(236,43,130,0.16)] space-y-2.5">
-                <div class="text-xs font-bold uppercase tracking-wider text-pink-300 flex items-center gap-1.5">
-                  <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> AI TACTICAL INSIGHTS
-                </div>
-                <ul id="xi-insights" class="space-y-2 text-[11.5px] text-slate-300 leading-relaxed"></ul>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- =============================================================== -->
-        <!-- SECTION 5: DATA MODELS & WHAT-IF SIMULATOR (Matches ref_05!) -->
-        <!-- =============================================================== -->
-        <section id="sec-models" class="reveal-section space-y-5 pt-4 border-t border-white/10 scroll-mt-20">
-          <div class="flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <span class="text-[10.5px] font-mono uppercase tracking-[0.22em] text-sky-400 font-bold">Section 05 • Statistical Rigor &amp; Validation</span>
-              <h2 class="text-xl sm:text-2xl font-black tracking-tight mt-0.5">Data Models, Empirical Calibration &amp; Live "What-If" Simulator</h2>
-            </div>
-            <span class="text-xs text-slate-400">Zero black boxes • 100% deterministic Python pipeline (seed = 42)</span>
-          </div>
-
-          <!-- 4 ML KPI CARDS (ref_05 layout) -->
-          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-            <div class="glass-card p-4">
-              <div class="text-[10.5px] uppercase text-slate-400 font-semibold">ACTIVE STATISTICAL MODULES</div>
-              <div class="text-2xl sm:text-3xl font-extrabold font-mono mt-1">5 / 5 <span class="text-sm font-semibold text-emerald-400">Audited</span></div>
-              <div class="text-[11px] text-slate-400 mt-1.5">IRLS Win-Prob • xRuns • EB • Bootstrap</div>
-            </div>
-            <div class="glass-card p-4">
-              <div class="text-[10.5px] uppercase text-slate-400 font-semibold">2ND-INN WIN-PROB BRIER</div>
-              <div class="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-pink-400">0.1298</div>
-              <div class="text-[11px] text-slate-400 mt-1.5">1st-Inn Brier: 0.2189 (Lower = Better)</div>
-            </div>
-            <div class="glass-card p-4">
-              <div class="text-[10.5px] uppercase text-slate-400 font-semibold">EQUAL-WEIGHT STABILITY</div>
-              <div class="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-sky-300">10/10 <span class="text-sm text-slate-400">&amp;</span> 8/10</div>
-              <div class="text-[11px] text-slate-400 mt-1.5">Bat / Bowl Top-10 Overlap (1/1/1 weights)</div>
-            </div>
-            <div class="glass-card p-4">
-              <div class="text-[10.5px] uppercase text-slate-400 font-semibold">BOOTSTRAP RESAMPLES</div>
-              <div class="text-2xl sm:text-3xl font-extrabold font-mono mt-1">1,000x</div>
-              <div class="text-[11px] text-slate-400 mt-1.5">Whole-match resampling • 90% CI Bands</div>
-            </div>
-          </div>
-
-          <!-- FEATURE IMPORTANCE GRADIENT BARS (from ref_05!) + EMPIRICAL CALIBRATION -->
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            <div class="lg:col-span-6 glass-card p-5 space-y-3.5">
-              <div>
-                <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider">PRESSURE INDEX &amp; PRR SIGNAL ARCHITECTURE</h3>
-                <p class="text-[11px] text-slate-400">Relative contribution of match-context and scoring drivers across 200,999 balls</p>
-              </div>
-              <div class="space-y-3 pt-1">
-                <div>
-                  <div class="flex justify-between text-xs mb-1"><span class="font-semibold">High-Pressure EB Impact (PRR Weight)</span><span class="font-mono text-sky-300 font-bold">60%</span></div>
-                  <div class="h-3 rounded-full bg-white/10 overflow-hidden"><div class="grad-bar h-full rounded-full" style="width: 96%"></div></div>
-                </div>
-                <div>
-                  <div class="flex justify-between text-xs mb-1"><span class="font-semibold">Win-Probability Ball Leverage (PI Max Share)</span><span class="font-mono text-sky-300 font-bold">38 pts</span></div>
-                  <div class="h-3 rounded-full bg-white/10 overflow-hidden"><div class="grad-bar h-full rounded-full" style="width: 82%"></div></div>
-                </div>
-                <div>
-                  <div class="flex justify-between text-xs mb-1"><span class="font-semibold">Chase / Collapse / Defending Stress (Aliveness-Gated)</span><span class="font-mono text-sky-300 font-bold">37 pts</span></div>
-                  <div class="h-3 rounded-full bg-white/10 overflow-hidden"><div class="grad-bar h-full rounded-full" style="width: 78%"></div></div>
-                </div>
-                <div>
-                  <div class="flex justify-between text-xs mb-1"><span class="font-semibold">Ceiling-Safe Pressure Resilience (Delta vs Baseline)</span><span class="font-mono text-sky-300 font-bold">20%</span></div>
-                  <div class="h-3 rounded-full bg-white/10 overflow-hidden"><div class="grad-bar h-full rounded-full" style="width: 58%"></div></div>
-                </div>
-                <div>
-                  <div class="flex justify-between text-xs mb-1"><span class="font-semibold">Cross-Match Consistency (+Inns% &amp; Median Impact)</span><span class="font-mono text-sky-300 font-bold">20%</span></div>
-                  <div class="h-3 rounded-full bg-white/10 overflow-hidden"><div class="grad-bar h-full rounded-full" style="width: 58%"></div></div>
-                </div>
-                <div>
-                  <div class="flex justify-between text-xs mb-1"><span class="font-semibold">Knockout / Final / Super Over Stakes Bonus</span><span class="font-mono text-sky-300 font-bold">+15 / 100</span></div>
-                  <div class="h-3 rounded-full bg-white/10 overflow-hidden"><div class="grad-bar h-full rounded-full" style="width: 44%"></div></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="lg:col-span-6 glass-card p-5">
-              <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider">EMPIRICAL PROOF: WICKET RATE SURGES +28% AT PI ≥ 60</h3>
-              <p class="text-[11px] text-slate-400 mb-1">Proving our Pressure Index genuinely separates high-stress play from normal cricket</p>
-              <div id="mod-calib-chart" class="w-full h-[250px]"></div>
-            </div>
-          </div>
-
-          <!-- LIVE WHAT-IF PRR WEIGHT SIMULATOR -->
-          <div class="glass-card p-5 space-y-4 border-pink-500/30">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h3 class="text-sm sm:text-base font-bold">Interactive "What-If" PRR Weight Simulator — Live Re-Ranking</h3>
-                <p class="text-[11px] text-slate-400">Drag sliders to test ranking stability (try 80% HP Impact to see Jasprit Bumrah enter the Top 10!)</p>
-              </div>
-              <div class="flex items-center gap-2">
-                <span id="sim-overlap-badge" class="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-emerald-500/15 border border-emerald-500/40 text-emerald-300">Overlap: Bat 10/10 • Bowl 10/10</span>
-                <button onclick="resetSimWeights()" class="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-bold cursor-pointer">Reset 60/20/20</button>
-              </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-black/25 p-3.5 rounded-xl border border-white/10">
-              <div>
-                <div class="flex justify-between text-xs font-bold mb-1"><span class="text-pink-400">High-Pressure Impact</span><span id="lbl-w-hp" class="font-mono">60%</span></div>
-                <input id="sl-hp" type="range" min="20" max="90" value="60" oninput="runSimulator()" class="w-full" />
-              </div>
-              <div>
-                <div class="flex justify-between text-xs font-bold mb-1"><span class="text-sky-400">Pressure Resilience (Delta)</span><span id="lbl-w-dl" class="font-mono">20%</span></div>
-                <input id="sl-dl" type="range" min="0" max="60" value="20" oninput="runSimulator()" class="w-full" />
-              </div>
-              <div>
-                <div class="flex justify-between text-xs font-bold mb-1"><span class="text-teal-400">Cross-Match Consistency</span><span id="lbl-w-cs" class="font-mono">20%</span></div>
-                <input id="sl-cs" type="range" min="0" max="60" value="20" oninput="runSimulator()" class="w-full" />
-              </div>
-            </div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div class="bg-black/25 border border-white/10 rounded-xl p-3">
-                <div class="text-[11px] font-mono uppercase text-pink-400 font-bold mb-2">Simulated Top 10 Batters</div>
-                <div id="sim-bat-list" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs"></div>
-              </div>
-              <div class="bg-black/25 border border-white/10 rounded-xl p-3">
-                <div class="text-[11px] font-mono uppercase text-sky-400 font-bold mb-2">Simulated Top 10 Bowlers</div>
-                <div id="sim-bowl-list" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- BOOTSTRAP 90% CI FOREST PLOTS -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div class="glass-card p-5">
-              <h3 class="text-sm font-bold">Batters: 1,000x Match-Level Bootstrap (90% CI)</h3>
-              <div id="boot-bat-chart" class="w-full h-[310px]"></div>
-            </div>
-            <div class="glass-card p-5">
-              <h3 class="text-sm font-bold">Bowlers: 1,000x Match-Level Bootstrap (90% CI)</h3>
-              <div id="boot-bowl-chart" class="w-full h-[310px]"></div>
-            </div>
-          </div>
-
-          <!-- ALGORITHM REGISTRY TABLE + PRR WEIGHT DONUT (from ref_05!) -->
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            <div class="lg:col-span-8 glass-card p-5 space-y-3">
-              <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider">ALGORITHM &amp; STATISTICAL PIPELINE REGISTRY</h3>
-              <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs border-collapse">
-                  <thead class="bg-[#0D1326] text-slate-400 text-[10px] uppercase border-b border-white/10">
-                    <tr><th class="p-2.5">Module</th><th class="p-2.5">Method</th><th class="p-2.5">Primary Metric</th><th class="p-2.5">Validation</th><th class="p-2.5 text-center">Status</th></tr>
-                  </thead>
-                  <tbody class="divide-y divide-white/5">
-                    <tr><td class="p-2.5 font-bold">Win-Prob Engine (Inn 2)</td><td class="p-2.5 text-slate-400">Regularized IRLS Logistic</td><td class="p-2.5 font-mono">Brier: 0.1298</td><td class="p-2.5 text-emerald-400 font-semibold">High</td><td class="p-2.5 text-center"><span class="badge-high px-2.5 py-0.5 rounded-full text-[10px] font-bold">ACTIVE</span></td></tr>
-                    <tr><td class="p-2.5 font-bold">Win-Prob Engine (Inn 1)</td><td class="p-2.5 text-slate-400">Regularized IRLS Logistic</td><td class="p-2.5 font-mono">Brier: 0.2189</td><td class="p-2.5 text-emerald-400 font-semibold">High</td><td class="p-2.5 text-center"><span class="badge-high px-2.5 py-0.5 rounded-full text-[10px] font-bold">ACTIVE</span></td></tr>
-                    <tr><td class="p-2.5 font-bold">Expected Value Par</td><td class="p-2.5 text-slate-400">Stratified xRuns × Venue Factor</td><td class="p-2.5 font-mono">Par: 8.86 rpo</td><td class="p-2.5 text-emerald-400 font-semibold">200,999 balls</td><td class="p-2.5 text-center"><span class="badge-high px-2.5 py-0.5 rounded-full text-[10px] font-bold">ACTIVE</span></td></tr>
-                    <tr><td class="p-2.5 font-bold">Empirical Bayes Shrinkage</td><td class="p-2.5 text-slate-400">Prior k = 120 Weighted Balls</td><td class="p-2.5 font-mono">Noise Control</td><td class="p-2.5 text-sky-300 font-semibold">10/10 Overlap</td><td class="p-2.5 text-center"><span class="badge-high px-2.5 py-0.5 rounded-full text-[10px] font-bold">ACTIVE</span></td></tr>
-                    <tr><td class="p-2.5 font-bold">Bootstrap Validator</td><td class="p-2.5 text-slate-400">1,000x Whole-Match Resample</td><td class="p-2.5 font-mono">P(&gt;0) ≥ 92.7%</td><td class="p-2.5 text-sky-300 font-semibold">Seed = 42</td><td class="p-2.5 text-center"><span class="badge-med px-2.5 py-0.5 rounded-full text-[10px] font-bold">VERIFIED</span></td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div class="lg:col-span-4 glass-card p-5 flex flex-col justify-between">
-              <div>
-                <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider">PRR COMPOSITE WEIGHTS</h3>
-                <p class="text-[11px] text-slate-400">Balanced impact, delta &amp; repeatability</p>
-              </div>
-              <div id="mod-weights-donut" class="w-full h-[210px]"></div>
-            </div>
-          </div>
-        </section>
-
-        <!-- =============================================================== -->
-        <!-- SECTION 6: HACKATHON REPORT & LIVE PRESSURE SANDBOX (ref_02) -->
-        <!-- =============================================================== -->
-        <section id="sec-report" class="reveal-section space-y-5 pt-4 border-t border-white/10 scroll-mt-20">
-          <div class="flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <span class="text-[10.5px] font-mono uppercase tracking-[0.22em] text-pink-400 font-bold">Section 06 • Submission Audit &amp; Live Formula Lab</span>
-              <h2 class="text-xl sm:text-2xl font-black tracking-tight mt-0.5">Hackathon Report Summary &amp; Live Ball-by-Ball Pressure Calculator</h2>
-            </div>
-            <span class="pill-optimized px-4 py-1 rounded-full text-xs font-bold">ROUND 1 SUBMISSION READY</span>
-          </div>
-
-          <!-- LIVE BALL-BY-BALL PRESSURE CALCULATOR -->
-          <div class="glass-card p-5 space-y-4">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h3 class="text-sm sm:text-base font-bold">Live Ball-by-Ball Pressure Index (PI) Calculator</h3>
-                <p class="text-[11px] text-slate-400">Test any cricket scenario — watch how Game Aliveness filters out dead chases (e.g., 55 needed off 6 balls) while peaking on tight finishes.</p>
-              </div>
-            </div>
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
-              <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-black/25 p-4 rounded-xl border border-white/10 text-xs">
-                <div>
-                  <label class="font-bold text-slate-300 flex justify-between"><span>Innings</span><span id="pc-inn-v" class="font-mono text-pink-400">2nd (Chase)</span></label>
-                  <select id="pc-inn" onchange="calcLivePI()" class="mt-1 w-full bg-[#090D18] border border-white/15 rounded-lg p-2 text-white">
-                    <option value="2" selected>2nd Innings (Chase)</option>
-                    <option value="1">1st Innings (Setting)</option>
-                    <option value="3">Super Over</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="font-bold text-slate-300 flex justify-between"><span>Match Stage</span><span id="pc-st-v" class="font-mono text-pink-400">League</span></label>
-                  <select id="pc-stage" onchange="calcLivePI()" class="mt-1 w-full bg-[#090D18] border border-white/15 rounded-lg p-2 text-white">
-                    <option value="0">League (+0)</option>
-                    <option value="8">Super 4 (+8)</option>
-                    <option value="12">Playoff / Knockout (+12)</option>
-                    <option value="15">Final (+15)</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="font-bold text-slate-300 flex justify-between"><span>Over</span><span id="pc-ov-v" class="font-mono">18</span></label>
-                  <input id="pc-ov" type="range" min="1" max="20" value="18" oninput="calcLivePI()" class="w-full mt-1" />
-                </div>
-                <div>
-                  <label class="font-bold text-slate-300 flex justify-between"><span>Wickets Fallen</span><span id="pc-wk-v" class="font-mono">5</span></label>
-                  <input id="pc-wk" type="range" min="0" max="9" value="5" oninput="calcLivePI()" class="w-full mt-1" />
-                </div>
-                <div class="sm:col-span-2">
-                  <label class="font-bold text-slate-300 flex justify-between"><span id="pc-rn-lbl">Runs Needed to Win</span><span id="pc-rn-v" class="font-mono">34 runs</span></label>
-                  <input id="pc-rn" type="range" min="1" max="220" value="34" oninput="calcLivePI()" class="w-full mt-1" />
-                </div>
-              </div>
-              <div class="lg:col-span-5 bg-black/35 border border-white/10 rounded-2xl p-5 text-center space-y-2.5">
-                <div class="text-[10.5px] font-mono uppercase tracking-widest text-slate-400">Ball-Level Pressure Index</div>
-                <div id="pc-pi-big" class="text-5xl font-black font-mono text-pink-400">84.2</div>
-                <div id="pc-tier-pill" class="inline-block px-3.5 py-1 rounded-full text-xs font-bold badge-high">HIGH PRESSURE (PI ≥ 60)</div>
-                <div class="grid grid-cols-3 gap-2 pt-2.5 border-t border-white/10 text-[11px]">
-                  <div><div class="text-slate-400">Win Prob</div><div id="pc-wp" class="font-mono font-bold mt-0.5">42%</div></div>
-                  <div><div class="text-slate-400">Aliveness</div><div id="pc-alive" class="font-mono font-bold text-teal-400 mt-0.5">0.97</div></div>
-                  <div><div class="text-slate-400">RRR / Par</div><div id="pc-rrr" class="font-mono font-bold text-sky-300 mt-0.5">11.3</div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- BUMRAH INTEGRITY CALLOUT + 5 DATA HYGIENE CONTROLS -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div class="glass-card p-5 border-l-4 border-amber-400 space-y-2">
-              <div class="text-[10.5px] font-mono uppercase tracking-wider text-amber-300 font-bold">Data Over Reputation • Transparency Case Study</div>
-              <h3 class="text-base font-bold">Why Jasprit Bumrah Ranks #11 (PRR 70.3)</h3>
-              <p class="text-xs text-slate-300 leading-relaxed">
-                Bumrah posts elite numbers everywhere (<strong>Norm EB +24.08 → HP EB +24.04</strong>, +1.87 runs saved/over across 52 spells, 99.5% bootstrap confidence). Because his ordinary baseline is already at the ceiling, his Pressure Delta is −0.04, leaving him 0.9 PRR points behind #10 Kuldeep Yadav (71.2). Rather than manually overriding the algorithm for reputation, we report #11 transparently and document this Baseline Compression effect in Section 5 of our PDF.
-              </p>
-              <button onclick="openPlayerModal('bowl','Jasprit Bumrah')" class="text-xs font-bold text-amber-300 hover:underline cursor-pointer">Open Jasprit Bumrah Scouting Dossier →</button>
-            </div>
-
-            <div class="glass-card p-5 space-y-2 text-xs text-slate-300">
-              <div class="text-[10.5px] font-mono uppercase tracking-wider text-sky-400 font-bold">Audited Cricket-Law Hygiene</div>
-              <h3 class="text-base font-bold">Five Traps Neutralized Before Modeling</h3>
-              <ul class="list-disc pl-4 space-y-1 leading-relaxed">
-                <li><strong>Legal Deliveries:</strong> Excluded 7,714 wides, 576 <code>Overstep</code>, 264 <code>other</code> no-balls &amp; 1 Penalty; excluded 3,277 byes/legbyes from bowler runs.</li>
-                <li><strong>Bowler Wickets Only:</strong> Excluded 600 RunOuts, 6 Retire Outs &amp; 3 Obstructing-field rows (catching CSV typo <code>Obstracting the field</code>).</li>
-                <li><strong>34 DLS Matches &amp; 38 Super Over Balls:</strong> Applied exact revised targets/overs and tagged Super Overs at <code>PI = 100</code>.</li>
-                <li><strong>ID Integrity &amp; Tiers:</strong> Keyed by <code>player_id</code> (resolving 3 duplicate names) and downweighted 31 Emerging Asia Cup fixtures (0.55).</li>
+            <div class="space-y-3 pt-2">
+              <div class="text-xs font-mono uppercase tracking-wider text-slateMuted dark:text-stone-400">Five Audited Cricket-Law Hygiene Controls</div>
+              <ul class="space-y-2.5 text-sm text-charcoal/85 dark:text-stone-300 leading-relaxed">
+                <li class="flex gap-3"><span class="font-mono text-xs text-slateMuted pt-0.5">01</span><span>Excluded 7,714 wides, 576 <code class="font-mono text-xs">Overstep</code> &amp; 264 <code class="font-mono text-xs">other</code> no-balls from legal balls; excluded 3,277 byes/legbyes from bowler runs.</span></li>
+                <li class="flex gap-3"><span class="font-mono text-xs text-slateMuted pt-0.5">02</span><span>Bowler wickets filtered strictly to Bowled, Caught, LBW, Stump &amp; Hit Wicket (catching raw CSV typo <code class="font-mono text-xs">Obstracting the field</code>).</span></li>
+                <li class="flex gap-3"><span class="font-mono text-xs text-slateMuted pt-0.5">03</span><span>Exact <code class="font-mono text-xs">revised_target</code> &amp; overs applied across all 34 DLS rain-affected matches.</span></li>
+                <li class="flex gap-3"><span class="font-mono text-xs text-slateMuted pt-0.5">04</span><span>38 Super Over deliveries tagged at peak <code class="font-mono text-xs">PI = 100</code>; 16 washouts isolated.</span></li>
+                <li class="flex gap-3"><span class="font-mono text-xs text-slateMuted pt-0.5">05</span><span>Strict <code class="font-mono text-xs">player_id</code> keying (3 duplicate names resolved) &amp; 31 Emerging Asia Cup games downweighted (0.55).</span></li>
               </ul>
             </div>
           </div>
-        </section>
-
-        <footer class="pt-6 pb-10 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-          <div>Rajasthan Royals • SupeRR Selector Season 2 (Round 1) • Audited on 200,999 IPL &amp; T20I Deliveries</div>
-          <div class="font-mono">Reproducible Pipeline (seed = 42) • Zero Proprietary CSVs Published</div>
-        </footer>
-      </main>
-    </div>
-  </div>
-
-  <!-- PLAYER DEEP-DIVE MODAL -->
-  <div id="player-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 backdrop-blur-md p-4" onclick="if(event.target===this) closeModal()">
-    <div class="glass-card max-w-2xl w-full p-6 border-pink-500/50 space-y-4 max-h-[90vh] overflow-y-auto bg-[#0D1326]/95">
-      <div class="flex items-start justify-between gap-3">
-        <div>
-          <div id="m-eyebrow" class="text-[10.5px] font-mono uppercase text-pink-400 font-bold"></div>
-          <h2 id="m-name" class="text-2xl font-black mt-0.5"></h2>
-          <div id="m-sub" class="text-xs text-slate-400 mt-1"></div>
         </div>
-        <button onclick="closeModal()" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 cursor-pointer"><i data-lucide="x" class="w-4 h-4"></i></button>
+
+        <!-- Right: Editorial Narrative + Jasprit Bumrah Case Study (FitIQ Section 4 rhythm!) -->
+        <div class="lg:col-span-6 lg:pl-4 max-w-xl">
+          <span class="text-xs font-mono uppercase tracking-widest text-slateMuted dark:text-stone-400">The SupeRR Method</span>
+          <h2 class="mt-3 text-3xl sm:text-4xl lg:text-[44px] font-semibold tracking-tight leading-[1.12]">
+            Why Jasprit Bumrah sits at #11—and why we didn't hide it
+          </h2>
+          <p class="mt-5 text-base sm:text-lg text-slateMuted dark:text-stone-400 leading-relaxed">
+            Every casual fan puts Jasprit Bumrah #1 by reputation. In our audited 2022–2026 data, Bumrah is extraordinary <em>everywhere</em>—posting +24.08 runs/100 balls in ordinary overs and +24.04 under peak pressure (+1.87 runs saved per over across 52 spells).
+          </p>
+          <p class="mt-4 text-sm sm:text-base text-slateMuted dark:text-stone-400 leading-relaxed">
+            Because his normal baseline is already at the ceiling, his pressure delta is flat (−0.04), placing him 0.9 PRR points behind #10 Kuldeep Yadav (71.2). Keeping him transparently at #11 proves our rankings follow the data—not reputation—while surfacing true pressure risers like Varun Chakravarthy (+13.9 Delta), Adam Zampa (+23.6 Delta), and Shashank Singh (+14.1 Delta).
+          </p>
+
+          <div class="mt-6">
+            <button onclick="openPlayerDrawer('bowl','Jasprit Bumrah')" class="inline-flex items-center gap-2 text-sm font-medium text-charcoal dark:text-white underline underline-offset-4 hover:text-rrAccent transition cursor-pointer">
+              Inspect Jasprit Bumrah's full scouting card →
+            </button>
+          </div>
+
+          <!-- 3 Minimalist Editorial Stats -->
+          <div class="mt-9 pt-8 border-t border-black/10 dark:border-white/10 grid grid-cols-3 gap-4">
+            <div>
+              <div class="font-mono text-xl sm:text-2xl font-semibold">+28%</div>
+              <div class="text-xs text-slateMuted dark:text-stone-400 mt-1">Wicket surge at PI ≥ 60</div>
+            </div>
+            <div>
+              <div class="font-mono text-xl sm:text-2xl font-semibold">10/10</div>
+              <div class="text-xs text-slateMuted dark:text-stone-400 mt-1">Equal-weight bat overlap</div>
+            </div>
+            <div>
+              <div class="font-mono text-xl sm:text-2xl font-semibold">Zero</div>
+              <div class="text-xs text-slateMuted dark:text-stone-400 mt-1">Reputation overrides</div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div id="m-kpis" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5"></div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-        <div id="m-radar" class="w-full h-[240px]"></div>
-        <div id="m-details" class="space-y-2 text-xs text-slate-300"></div>
+    </section>
+
+    <!-- ==================== 6. RAJASTHAN ROYALS IPL 2027 SQUAD FIT & PURSE PLANNER ==================== -->
+    <section id="squad-fit" class="py-14 sm:py-20 scroll-mt-20 border-t border-black/[0.06] dark:border-white/[0.08]">
+      <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10">
+        <div class="max-w-xl">
+          <span class="text-xs font-mono uppercase tracking-widest text-slateMuted dark:text-stone-400">Jaipur Sawai Mansingh Blueprint</span>
+          <h2 class="mt-2 text-3xl sm:text-4xl lg:text-[44px] font-semibold tracking-tight leading-[1.1]">
+            From pressure rankings to an IPL 2027 auction plan
+          </h2>
+          <p class="mt-3 text-sm sm:text-base text-slateMuted dark:text-stone-400 leading-relaxed">
+            Historical retirees (Dinesh Karthik, Matthew Wade) are filtered out of auction targets. Toggle active Top-10 picks and high-ceiling watchlist gems below to build Rajasthan Royals' 2027 pressure core.
+          </p>
+        </div>
+
+        <!-- Live Auction Summary Counters -->
+        <div class="flex items-center gap-7 sm:gap-9 border-t lg:border-t-0 pt-5 lg:pt-0 border-black/10 dark:border-white/10">
+          <div>
+            <div class="text-xs font-mono text-slateMuted dark:text-stone-400 mb-1">Purse Left</div>
+            <div id="rr-rem-purse" class="text-2xl sm:text-3xl font-mono font-medium">₹14.5 Cr</div>
+          </div>
+          <div>
+            <div class="text-xs font-mono text-slateMuted dark:text-stone-400 mb-1">Avg PRR</div>
+            <div id="rr-avg-prr" class="text-2xl sm:text-3xl font-mono font-medium text-rrAccent">73.0</div>
+          </div>
+          <div>
+            <div class="text-xs font-mono text-slateMuted dark:text-stone-400 mb-1">Overseas</div>
+            <div id="rr-os-cnt" class="text-2xl sm:text-3xl font-mono font-medium">2<span class="text-slateMuted">/4</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left 8 cols: Clean Target Cards Grid -->
+        <div class="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-4" id="rrTargetCards"></div>
+
+        <!-- Right 4 cols: Clean Architectural Squad Coverage Summary -->
+        <div class="lg:col-span-4 bg-white dark:bg-darkCard rounded-card p-6 sm:p-7 border border-black/[0.05] dark:border-white/[0.06] flex flex-col justify-between space-y-6">
+          <div class="space-y-5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono uppercase tracking-wider text-slateMuted dark:text-stone-400">Jaipur Tactical Fit</span>
+              <button onclick="resetRRCart()" class="text-xs font-medium underline underline-offset-2 text-slateMuted hover:text-charcoal dark:hover:text-white cursor-pointer">Reset core</button>
+            </div>
+            <div>
+              <h3 class="text-xl font-semibold tracking-tight">Sawai Mansingh Role Coverage</h3>
+              <p class="text-xs text-slateMuted dark:text-stone-400 mt-1 leading-relaxed">
+                70m+ square boundaries reward overs 7–15 spin control, #5–#7 domestic power hitters, and hard-length pace pairing with Jofra Archer.
+              </p>
+            </div>
+            <div id="rr-gap-list" class="space-y-2.5 text-sm"></div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-stoneBg dark:bg-darkRest text-xs text-slateMuted dark:text-stone-300 leading-relaxed">
+            <strong class="text-charcoal dark:text-white block mb-1">Existing RR Pressure Core:</strong>
+            Yashasvi Jaiswal (190.5 HP SR gem), Dhruv Jurel (76% +Inns at PI≥65), and Jofra Archer (#13 pace at PI≥65) anchor the squad around these auction additions.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 7. LIVE BALL-BY-BALL PRESSURE CALCULATOR ==================== -->
+    <section id="sandbox" class="py-12 sm:py-16 scroll-mt-20 border-t border-black/[0.06] dark:border-white/[0.08]">
+      <div class="bg-white dark:bg-darkCard rounded-card p-6 sm:p-10 border border-black/[0.05] dark:border-white/[0.06]">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div class="lg:col-span-7 space-y-5">
+            <div>
+              <span class="text-xs font-mono uppercase tracking-widest text-slateMuted dark:text-stone-400">Interactive Formula Sandbox</span>
+              <h2 class="mt-1.5 text-2xl sm:text-3xl font-semibold tracking-tight">Test any match state in the Pressure Index</h2>
+              <p class="mt-2 text-sm text-slateMuted dark:text-stone-400">
+                Dial in a scenario below. Notice how our Win-Probability Aliveness gate automatically drops dead chases (like needing 55 off 6 balls) while peaking on tight finishes and early collapses.
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div>
+                <label class="block font-mono uppercase text-slateMuted dark:text-stone-400 mb-1.5">Innings</label>
+                <select id="pc-inn" onchange="calcLivePI()" class="w-full px-4 py-2.5 rounded-2xl bg-stoneBg dark:bg-darkRest border border-black/[0.06] dark:border-white/10 text-sm focus:outline-none">
+                  <option value="2" selected>2nd Innings (Chase)</option>
+                  <option value="1">1st Innings (Setting)</option>
+                  <option value="3">Super Over</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-mono uppercase text-slateMuted dark:text-stone-400 mb-1.5">Match Stakes</label>
+                <select id="pc-stage" onchange="calcLivePI()" class="w-full px-4 py-2.5 rounded-2xl bg-stoneBg dark:bg-darkRest border border-black/[0.06] dark:border-white/10 text-sm focus:outline-none">
+                  <option value="0">League Match (+0)</option>
+                  <option value="8">Super 4 (+8)</option>
+                  <option value="12">Playoff / Knockout (+12)</option>
+                  <option value="15">Final (+15)</option>
+                </select>
+              </div>
+              <div>
+                <div class="flex justify-between font-mono text-slateMuted dark:text-stone-400 mb-1"><span>Over</span><span id="pc-ov-v" class="text-charcoal dark:text-white font-semibold">18</span></div>
+                <input id="pc-ov" type="range" min="1" max="20" value="18" oninput="calcLivePI()" class="w-full" />
+              </div>
+              <div>
+                <div class="flex justify-between font-mono text-slateMuted dark:text-stone-400 mb-1"><span>Wickets Fallen</span><span id="pc-wk-v" class="text-charcoal dark:text-white font-semibold">5</span></div>
+                <input id="pc-wk" type="range" min="0" max="9" value="5" oninput="calcLivePI()" class="w-full" />
+              </div>
+              <div class="sm:col-span-2">
+                <div class="flex justify-between font-mono text-slateMuted dark:text-stone-400 mb-1"><span id="pc-rn-lbl">Runs Needed to Win</span><span id="pc-rn-v" class="text-charcoal dark:text-white font-semibold">34 runs</span></div>
+                <input id="pc-rn" type="range" min="1" max="220" value="34" oninput="calcLivePI()" class="w-full" />
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-5 bg-stoneBg dark:bg-darkRest rounded-3xl p-7 text-center space-y-4">
+            <div class="text-xs font-mono uppercase tracking-widest text-slateMuted dark:text-stone-400">Ball-Level Pressure Index</div>
+            <div id="pc-pi-big" class="text-6xl font-mono font-semibold tracking-tight text-charcoal dark:text-white">84.2</div>
+            <div>
+              <span id="pc-tier-pill" class="inline-block px-4 py-1.5 rounded-full text-xs font-mono font-medium bg-charcoal text-white dark:bg-white dark:text-charcoal">
+                HIGH PRESSURE (PI ≥ 60)
+              </span>
+            </div>
+            <div class="grid grid-cols-3 gap-3 pt-4 border-t border-black/10 dark:border-white/10 text-xs">
+              <div><div class="text-slateMuted dark:text-stone-400 font-mono">Win Prob</div><div id="pc-wp" class="font-mono text-base font-semibold mt-0.5">42%</div></div>
+              <div><div class="text-slateMuted dark:text-stone-400 font-mono">Aliveness</div><div id="pc-alive" class="font-mono text-base font-semibold mt-0.5">0.97</div></div>
+              <div><div class="text-slateMuted dark:text-stone-400 font-mono">RRR / Par</div><div id="pc-rrr" class="font-mono text-base font-semibold mt-0.5">11.3</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 8. BOTTOM CHARCOAL CTA BANNER ==================== -->
+    <section class="py-10 sm:py-16">
+      <div class="relative rounded-3xl overflow-hidden bg-gradient-to-tr from-[#141414] via-[#262623] to-[#4A4945] text-white p-8 sm:p-14 lg:p-16">
+        <div class="max-w-xl relative z-10">
+          <h2 class="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.1]">
+            The Top 10 is audited.<br />Ready for the war room.
+          </h2>
+          <p class="mt-4 text-sm sm:text-base text-white/75 leading-relaxed">
+            Every ranking, confidence interval, and scouting profile on this page is deterministically computed from the 200,999-delivery SupeRR Selector Season 2 dataset.
+          </p>
+          <div class="mt-8 flex flex-wrap items-center gap-3">
+            <button
+              onclick="copyUnstopList()"
+              class="inline-flex items-center gap-2.5 bg-white text-charcoal pl-5 pr-2 py-2 rounded-full text-sm font-medium hover:bg-stone-100 transition cursor-pointer"
+            >
+              <span>Copy Unstop Top 10</span>
+              <span class="w-7 h-7 rounded-full bg-charcoal text-white flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                  <path d="M7 17L17 7M17 7H8M17 7v9" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+            </button>
+            <button
+              onclick="openSimModal()"
+              class="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 backdrop-blur-md text-white px-5 py-2.5 rounded-full text-sm font-medium transition cursor-pointer"
+            >
+              <span>Stress-Test Weights</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== FOOTER & OVERSIZED WATERMARK ==================== -->
+  <footer class="mt-12 pt-12 border-t border-black/[0.06] dark:border-white/[0.08] overflow-hidden">
+    <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-8 pb-12">
+        <div class="col-span-2 sm:col-span-4 lg:col-span-1">
+          <div class="flex items-center gap-2 font-semibold text-base">
+            <span class="w-6 h-6 rounded-full border-[1.75px] border-charcoal dark:border-white flex items-center justify-center text-[9px] font-mono font-bold">RR</span>
+            SupeRR Selector S2
+          </div>
+          <p class="mt-3 text-xs text-slateMuted dark:text-stone-400 leading-relaxed max-w-xs">
+            Calm, transparent T20 pressure analytics built for Rajasthan Royals' IPL 2027 scouting war room.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-mono uppercase tracking-wider text-slateMuted dark:text-stone-400 mb-3">Rankings</h4>
+          <ul class="space-y-2 text-sm text-charcoal/80 dark:text-stone-300">
+            <li><a href="#rankings" onclick="setTrack('bat10')" class="hover:underline">Top 10 Batters</a></li>
+            <li><a href="#rankings" onclick="setTrack('bowl10')" class="hover:underline">Top 10 Bowlers</a></li>
+            <li><a href="#rankings" onclick="setTrack('gems')" class="hover:underline">RR Watchlist Gems</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-mono uppercase tracking-wider text-slateMuted dark:text-stone-400 mb-3">Evidence</h4>
+          <ul class="space-y-2 text-sm text-charcoal/80 dark:text-stone-300">
+            <li><a href="#analytics" class="hover:underline">Clutch Quadrants</a></li>
+            <li><a href="#analytics" class="hover:underline">1,000x Bootstrap</a></li>
+            <li><a href="#database" class="hover:underline">181-Player Table</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-mono uppercase tracking-wider text-slateMuted dark:text-stone-400 mb-3">Strategy</h4>
+          <ul class="space-y-2 text-sm text-charcoal/80 dark:text-stone-300">
+            <li><a href="#method" class="hover:underline">Bumrah #11 Proof</a></li>
+            <li><a href="#squad-fit" class="hover:underline">Jaipur Squad Fit</a></li>
+            <li><a href="#sandbox" class="hover:underline">Pressure Calculator</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-mono uppercase tracking-wider text-slateMuted dark:text-stone-400 mb-3">Reproducibility</h4>
+          <ul class="space-y-2 text-sm text-charcoal/80 dark:text-stone-300">
+            <li><span class="font-mono text-xs text-slateMuted">200,999 balls</span></li>
+            <li><span class="font-mono text-xs text-slateMuted">Deterministic seed=42</span></li>
+            <li><span class="font-mono text-xs text-slateMuted">No raw CSVs exposed</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Oversized Faint Watermark Wordmark (FitIQ signature!) -->
+      <div class="select-none pointer-events-none text-center pt-2 pb-4">
+        <span class="block text-[16vw] sm:text-[14vw] lg:text-[175px] font-bold tracking-tighter leading-none text-charcoal/[0.045] dark:text-white/[0.045]">
+          SupeRR S2
+        </span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==================== FLOATING THEME TOGGLE ==================== -->
+  <button
+    onclick="toggleTheme()"
+    aria-label="Toggle dark or light theme"
+    title="Toggle Dark / Light Mode"
+    class="fixed bottom-5 right-5 z-40 w-11 h-11 rounded-full bg-white dark:bg-darkCard text-charcoal dark:text-white shadow-lg border border-black/10 dark:border-white/10 flex items-center justify-center hover:scale-105 transition cursor-pointer"
+  >
+    <svg class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+    <svg class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" stroke-linecap="round" />
+    </svg>
+  </button>
+
+  <!-- ==================== PLAYER SCOUTING SLIDE-OVER DRAWER (FitIQ Pattern!) ==================== -->
+  <div id="drawerBackdrop" onclick="closeDrawer()" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] hidden"></div>
+  <aside
+    id="playerDrawer"
+    class="fixed top-0 right-0 z-50 h-full w-full max-w-md bg-stoneBg dark:bg-darkBg shadow-2xl border-l border-black/10 dark:border-white/10 transform translate-x-full transition-transform duration-300 flex flex-col"
+  >
+    <div class="p-6 border-b border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between">
+      <div>
+        <span id="dr-tag" class="text-xs font-mono uppercase tracking-wider text-slateMuted dark:text-stone-400">RANK #1 · BATTER</span>
+        <h3 id="dr-name" class="text-2xl font-semibold tracking-tight mt-0.5">Tim David</h3>
+      </div>
+      <button onclick="closeDrawer()" aria-label="Close drawer" class="w-9 h-9 rounded-full bg-stonePill dark:bg-darkCard flex items-center justify-center hover:bg-black/10 transition cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" />
+        </svg>
+      </button>
+    </div>
+
+    <div id="dr-body" class="p-6 overflow-y-auto flex-1 space-y-5"></div>
+
+    <div class="p-5 border-t border-black/[0.06] dark:border-white/[0.08] bg-white/75 dark:bg-darkCard/80">
+      <button onclick="closeDrawer()" class="w-full py-3 rounded-full bg-charcoal dark:bg-white text-white dark:text-charcoal font-medium text-sm hover:opacity-90 transition cursor-pointer">
+        Done inspecting
+      </button>
+    </div>
+  </aside>
+
+  <!-- ==================== WHAT-IF PRR WEIGHT SIMULATOR MODAL (FitIQ Pattern!) ==================== -->
+  <div id="simModalBackdrop" onclick="if(event.target===this) closeSimModal()" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] hidden items-center justify-center p-4">
+    <div class="bg-stoneBg dark:bg-darkBg w-full max-w-2xl rounded-3xl p-6 sm:p-8 shadow-2xl border border-black/10 dark:border-white/10 relative max-h-[90vh] overflow-y-auto">
+      <button onclick="closeSimModal()" aria-label="Close simulator" class="absolute top-5 right-5 w-9 h-9 rounded-full bg-stonePill dark:bg-darkCard flex items-center justify-center hover:bg-black/10 transition cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" />
+        </svg>
+      </button>
+
+      <span class="text-xs font-mono uppercase tracking-wider text-slateMuted dark:text-stone-400">Sensitivity Stress-Test</span>
+      <h3 class="text-2xl sm:text-3xl font-semibold tracking-tight mt-1">What-If Weight Simulator</h3>
+      <p class="text-sm text-slateMuted dark:text-stone-400 mt-1">
+        Perturb the three PRR weights across all 181 audited players—try raising HP Impact to 80% to watch Jasprit Bumrah move into the Top 10.
+      </p>
+
+      <div class="mt-5 flex flex-wrap items-center justify-between gap-2">
+        <span id="sim-ov-pill" class="text-xs font-mono px-3.5 py-1.5 rounded-full bg-white dark:bg-darkCard border border-black/[0.06] dark:border-white/10">Overlap vs Official: Bat 10/10 · Bowl 10/10</span>
+        <button onclick="resetSim()" class="text-xs font-medium underline underline-offset-2 text-slateMuted hover:text-charcoal dark:hover:text-white cursor-pointer">Reset official (60/20/20)</button>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 bg-white dark:bg-darkCard p-4 rounded-2xl border border-black/[0.05] dark:border-white/[0.06] text-xs">
+        <div>
+          <div class="flex justify-between font-mono mb-1"><span>HP Impact</span><span id="sw-hp" class="font-semibold">60%</span></div>
+          <input id="sl-hp" type="range" min="20" max="90" value="60" oninput="runSim()" class="w-full" />
+        </div>
+        <div>
+          <div class="flex justify-between font-mono mb-1"><span>Resilience</span><span id="sw-dl" class="font-semibold">20%</span></div>
+          <input id="sl-dl" type="range" min="0" max="60" value="20" oninput="runSim()" class="w-full" />
+        </div>
+        <div>
+          <div class="flex justify-between font-mono mb-1"><span>Consistency</span><span id="sw-cs" class="font-semibold">20%</span></div>
+          <input id="sl-cs" type="range" min="0" max="60" value="20" oninput="runSim()" class="w-full" />
+        </div>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+        <div class="bg-white dark:bg-darkCard rounded-2xl p-4 border border-black/[0.05] dark:border-white/[0.06]">
+          <div class="font-mono text-[11px] uppercase text-slateMuted dark:text-stone-400 mb-2">Simulated Top 10 Batters</div>
+          <div id="sim-bat" class="space-y-1.5"></div>
+        </div>
+        <div class="bg-white dark:bg-darkCard rounded-2xl p-4 border border-black/[0.05] dark:border-white/[0.06]">
+          <div class="font-mono text-[11px] uppercase text-slateMuted dark:text-stone-400 mb-2">Simulated Top 10 Bowlers</div>
+          <div id="sim-bowl" class="space-y-1.5"></div>
+        </div>
       </div>
     </div>
   </div>
 
-  <div id="toast" class="fixed bottom-5 right-5 z-50 hidden bg-gradient-to-r from-pink-600 to-indigo-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xl"></div>
+  <!-- ==================== SUBTLE TOAST ==================== -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-full bg-charcoal dark:bg-white text-white dark:text-charcoal text-xs sm:text-sm font-medium shadow-xl opacity-0 pointer-events-none transition-opacity duration-300">
+    Copied
+  </div>
 
+  <!-- ==================== APPLICATION LOGIC ==================== -->
   <script>
     const D = window.RR_DATA;
-    let ovScatterRole = 'bat';
-    let matrixRole = 'bat';
-    let explorerMode = 'bat';
-    let swapSlotIdx = null;
-    const baseBat10Ids = new Set(D.batters.slice(0, 10).map(r => r.player_id));
-    const baseBowl10Ids = new Set(D.bowlers.slice(0, 10).map(r => r.player_id));
+    let activeTrack = 'bat10';
+    let chartRole = 'bat';
+    let tableRole = 'bat';
+    const baseBatIds = new Set(D.batters.slice(0, 10).map(r => r.player_id));
+    const baseBowlIds = new Set(D.bowlers.slice(0, 10).map(r => r.player_id));
 
     const PLOT_CFG = { responsive: true, displayModeBar: false };
-    function isLight() { return document.documentElement.classList.contains('light'); }
-    function themeColors() {
-      return isLight()
-        ? { text: '#1E293B', grid: 'rgba(15,23,42,0.10)', bg: 'rgba(255,255,255,0.4)' }
-        : { text: '#CBD5E1', grid: 'rgba(255,255,255,0.08)', bg: 'rgba(8,12,24,0.35)' };
+    function isDark() { return document.documentElement.classList.contains('dark'); }
+    function pPalette() {
+      return isDark()
+        ? { ink: '#F4F4F0', muted: '#9A9A94', grid: 'rgba(255,255,255,0.08)', accent: '#E04F8E', rest: '#52524E' }
+        : { ink: '#141414', muted: '#666662', grid: 'rgba(20,20,20,0.07)', accent: '#C81E68', rest: '#B4B4AE' };
     }
-    function baseLayout(extra = {}) {
-      const c = themeColors();
+    function pLayout(extra = {}) {
+      const c = pPalette();
       return Object.assign({
         paper_bgcolor: 'rgba(0,0,0,0)',
-        plot_bgcolor: c.bg,
-        font: { family: 'Inter, sans-serif', color: c.text, size: 10.5 },
-        margin: { l: 44, r: 16, t: 14, b: 38 },
-        xaxis: { gridcolor: c.grid, zerolinecolor: c.grid },
-        yaxis: { gridcolor: c.grid, zerolinecolor: c.grid },
-        legend: { orientation: 'h', y: -0.22, x: 0.5, xanchor: 'center', font: { size: 10 } }
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { family: '"Plus Jakarta Sans", sans-serif', color: c.ink, size: 11 },
+        margin: { l: 46, r: 16, t: 12, b: 42 },
+        xaxis: { gridcolor: c.grid, zerolinecolor: c.grid, tickfont: { family: '"JetBrains Mono", monospace', size: 10, color: c.muted } },
+        yaxis: { gridcolor: c.grid, zerolinecolor: c.grid, tickfont: { family: '"JetBrains Mono", monospace', size: 10, color: c.muted } },
+        legend: { orientation: 'h', y: -0.20, x: 0.5, xanchor: 'center', font: { size: 10.5 } }
       }, extra);
-    }
-
-    // --- Spotlight Cursor Tracking ---
-    function bindSpotlights() {
-      document.querySelectorAll('.glass-card').forEach(el => {
-        if (el.dataset.sp) return;
-        el.dataset.sp = '1';
-        el.addEventListener('mousemove', e => {
-          const r = el.getBoundingClientRect();
-          el.style.setProperty('--mx', `${e.clientX - r.left}px`);
-          el.style.setProperty('--my', `${e.clientY - r.top}px`);
-        });
-      });
-    }
-
-    // --- Scroll Progress + Scroll-Spy + Reveal ---
-    function initScrollSystem() {
-      const sections = ['sec-overview','sec-purse','sec-scouting','sec-squad','sec-models','sec-report'];
-      const thumb = document.getElementById('scroll-thumb');
-      window.addEventListener('scroll', () => {
-        const scrollTop = window.scrollY;
-        const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-        const pct = Math.min(1, Math.max(0, scrollTop / maxScroll));
-        if (thumb) thumb.style.transform = `translateY(${pct * 182}px)`;
-
-        let current = sections[0];
-        for (const id of sections) {
-          const el = document.getElementById(id);
-          if (el && el.getBoundingClientRect().top <= 200) current = id;
-        }
-        document.querySelectorAll('[data-nav]').forEach(a => a.classList.toggle('active', a.dataset.nav === current));
-        document.querySelectorAll('[data-dot]').forEach(d => {
-          const on = d.dataset.dot === current;
-          d.className = on ? 'w-2.5 h-2 rounded-full bg-pink-500 transition-all' : 'w-1.5 h-1.5 rounded-full bg-slate-600 transition-all';
-        });
-      }, { passive: true });
-
-      const obs = new IntersectionObserver(entries => {
-        entries.forEach(en => { if (en.isIntersecting) en.target.classList.add('visible'); });
-      }, { threshold: 0.08 });
-      document.querySelectorAll('.reveal-section').forEach(s => obs.observe(s));
-    }
-
-    function toggleTheme() {
-      document.documentElement.classList.toggle('light');
-      const btn = document.getElementById('theme-btn');
-      btn.innerHTML = isLight()
-        ? '<i data-lucide="moon" class="w-3.5 h-3.5 text-indigo-600"></i> Switch to Dark Stadium'
-        : '<i data-lucide="sun" class="w-3.5 h-3.5 text-amber-300"></i> Switch to Light Mode';
-      lucide.createIcons();
-      renderAllCharts();
     }
 
     function showToast(msg) {
       const t = document.getElementById('toast');
       t.textContent = msg;
-      t.classList.remove('hidden');
-      setTimeout(() => t.classList.add('hidden'), 2600);
+      t.classList.remove('opacity-0');
+      t.classList.add('opacity-100');
+      setTimeout(() => { t.classList.remove('opacity-100'); t.classList.add('opacity-0'); }, 2400);
+    }
+
+    function toggleMobileMenu() { document.getElementById('mobileMenu').classList.toggle('hidden'); }
+    function toggleTheme() {
+      document.documentElement.classList.toggle('dark');
+      renderCharts();
     }
 
     function copyUnstopList() {
       const bat = D.batters.slice(0, 10).map(r => `${r.rank}. ${r.name} (PRR ${r.prr})`).join("\n");
       const bowl = D.bowlers.slice(0, 10).map(r => `${r.rank}. ${r.name} (PRR ${r.prr})`).join("\n");
-      navigator.clipboard.writeText(`TOP 10 BATTERS:\n${bat}\n\nTOP 10 BOWLERS:\n${bowl}`)
-        .then(() => showToast("Copied exact Unstop Top-10 Batters & Bowlers lists!"));
+      navigator.clipboard.writeText(`TOP 10 BATTERS UNDER PRESSURE:\n${bat}\n\nTOP 10 BOWLERS UNDER PRESSURE:\n${bowl}`)
+        .then(() => showToast("Exact Unstop Top-10 lists copied to clipboard"));
     }
 
-    // --- SECTION 1: OVERVIEW CHARTS & MATRIX ---
-    function setOvScatter(role) {
-      ovScatterRole = role;
-      document.getElementById('ov-sc-bat').className = role === 'bat' ? 'px-2.5 py-1 rounded-lg bg-pink-600/30 border border-pink-500/60 text-pink-200 font-bold cursor-pointer' : 'px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300 font-bold cursor-pointer';
-      document.getElementById('ov-sc-bowl').className = role === 'bowl' ? 'px-2.5 py-1 rounded-lg bg-sky-600/30 border border-sky-400/60 text-sky-200 font-bold cursor-pointer' : 'px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300 font-bold cursor-pointer';
-      renderOvScatter();
+    function handleGlobalSearch(q) {
+      document.getElementById('tableSearch').value = q;
+      renderDatabaseTable();
     }
 
-    function renderOvRadar() {
-      const c = themeColors();
-      const axes = ['Powerplay Control', 'Death Overs', 'Spin Variety', 'Opening Cushion', 'Finisher Impact', 'Pace Variety'];
-      Plotly.newPlot('ov-radar', [
-        {
-          type: 'scatterpolar', name: 'RR 2027 Target Benchmark',
-          r: [84, 92, 95, 86, 94, 88, 84], theta: [...axes, axes[0]],
-          fill: 'toself', fillcolor: 'rgba(79, 125, 243, 0.22)',
-          line: { color: '#4F7DF3', width: 2.2 }
-        },
-        {
-          type: 'scatterpolar', name: 'Our Top-10 Picks Profile',
-          r: [88, 95, 96, 82, 97, 84, 88], theta: [...axes, axes[0]],
-          fill: 'toself', fillcolor: 'rgba(236, 43, 130, 0.26)',
-          line: { color: '#EC2B82', width: 2.4 }
-        }
-      ], {
-        paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-        font: { color: c.text, size: 10 }, margin: { l: 42, r: 42, t: 18, b: 36 },
-        legend: { orientation: 'h', y: -0.16, x: 0.5, xanchor: 'center', font: { size: 9.5 } },
-        polar: {
-          bgcolor: 'rgba(0,0,0,0)',
-          radialaxis: { visible: false, range: [0, 100] },
-          angularaxis: { gridcolor: c.grid, linecolor: c.grid }
-        }
-      }, PLOT_CFG);
+    // --- HORIZONTAL SNAP-SCROLL PLAYER TRACK (FitIQ Day-Card DNA) ---
+    function setTrack(mode) {
+      activeTrack = mode;
+      document.querySelectorAll('.track-pill').forEach(btn => {
+        const on = btn.dataset.track === mode;
+        btn.className = on
+          ? 'track-pill px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition cursor-pointer bg-charcoal text-white dark:bg-white dark:text-charcoal'
+          : 'track-pill px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition cursor-pointer bg-stonePill text-charcoal dark:bg-darkCard dark:text-stone-300 hover:bg-black/10';
+      });
+      renderTrackCards();
     }
 
-    function renderOvScatter() {
-      const pool = ovScatterRole === 'bat' ? D.batters : D.bowlers;
+    function renderTrackCards() {
+      const container = document.getElementById('playerTrackContainer');
+      let items = [];
+      if (activeTrack === 'bat10') {
+        items = D.batters.slice(0, 10).map(r => ({ kind: 'bat', r, note: `Pos ${r.avg_bat_pos} · ${r.ipl_team}` }));
+      } else if (activeTrack === 'bowl10') {
+        items = D.bowlers.slice(0, 10).map(r => ({ kind: 'bowl', r, note: `${r.pace_spin} · ${r.ipl_team}` }));
+      } else if (activeTrack === 'runners') {
+        items = [
+          ...D.batters.slice(10, 15).map(r => ({ kind: 'bat', r, note: `Batter Backup · ${r.ipl_team}` })),
+          ...D.bowlers.slice(10, 15).map(r => ({ kind: 'bowl', r, note: `Bowler Backup · ${r.ipl_team}` }))
+        ];
+      } else {
+        items = [
+          ...D.gems.batters.slice(0, 4).map(r => ({ kind: 'bat', r, note: `Watchlist Gem · ${r.hp_balls} HP balls`, isGem: true })),
+          ...D.gems.bowlers.slice(0, 5).map(r => ({ kind: 'bowl', r, note: `Watchlist Gem · ${r.hp_balls} HP balls`, isGem: true }))
+        ];
+      }
+
+      container.innerHTML = items.map(({ kind, r, note, isGem }) => {
+        const isBat = kind === 'bat';
+        const rankStr = isGem ? 'GEM' : `#${String(r.rank).padStart(2, '0')}`;
+        const m1L = isBat ? 'HP Strike Rate' : 'HP Economy';
+        const m1V = isBat ? `${r.hp_sr} (${r.hp_tsr>=0?'+':''}${r.hp_tsr})` : `${r.hp_econ.toFixed(2)} (+${r.hp_econ_saved.toFixed(2)})`;
+        const m2L = isBat ? 'HP Avg · +Inns' : 'Wkts · +Spells';
+        const m2V = isBat ? `${r.hp_avg} · ${Math.round(r.pos_inns_pct)}%` : `${r.hp_wkts}W · ${Math.round(r.pos_inns_pct)}%`;
+        const m3L = 'Pressure Delta';
+        const m3V = `${r.pressure_delta >= 0 ? '+' : ''}${r.pressure_delta.toFixed(1)}`;
+        const clickable = !isGem ? `onclick="openPlayerDrawer('${kind}','${r.name.replace(/'/g,"\\'")}')"` : '';
+        return `
+          <article ${clickable} class="snap-start shrink-0 w-[268px] sm:w-[282px] bg-white dark:bg-darkCard rounded-card p-5 border border-black/[0.05] dark:border-white/[0.06] flex flex-col justify-between gap-4 hover:-translate-y-1 hover:shadow-md transition-all duration-200 ${!isGem ? 'cursor-pointer' : ''}">
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="font-mono text-xs font-medium px-2.5 py-1 rounded-full ${r.rank<=3 && !isGem ? 'bg-charcoal text-white dark:bg-white dark:text-charcoal' : 'bg-stonePill dark:bg-darkRest text-slateMuted dark:text-stone-300'}">${rankStr}</span>
+                <span class="font-mono text-sm font-semibold ${r.rank<=3 && !isGem ? 'text-rrAccent' : 'text-charcoal dark:text-white'}">PRR ${r.prr.toFixed(1)}</span>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold tracking-tight leading-snug">${r.name}</h3>
+                <p class="text-xs text-slateMuted dark:text-stone-400 mt-0.5">${note}</p>
+              </div>
+            </div>
+
+            <div class="space-y-2.5 pt-3 border-t border-black/[0.06] dark:border-white/[0.07] text-xs">
+              <div class="flex items-center justify-between">
+                <span class="text-slateMuted dark:text-stone-400">${m1L}</span>
+                <span class="font-mono font-medium">${m1V}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slateMuted dark:text-stone-400">${m2L}</span>
+                <span class="font-mono font-medium">${m2V}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slateMuted dark:text-stone-400">${m3L}</span>
+                <span class="font-mono font-medium ${r.pressure_delta>=0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}">${m3V}</span>
+              </div>
+            </div>
+
+            <div class="pt-1 flex items-center justify-between text-[11px] font-mono text-slateMuted dark:text-stone-400">
+              <span>${r.hp_balls} HP balls · ${r.hp_inns} inns</span>
+              ${!isGem ? '<span class="text-charcoal dark:text-white font-medium">Inspect →</span>' : '<span>Watchlist</span>'}
+            </div>
+          </article>`;
+      }).join('');
+    }
+
+    // --- CHARTS (Flat, Calm, Editorial Palette) ---
+    function setChartRole(role) {
+      chartRole = role;
+      document.getElementById('cr-bat').className = role === 'bat' ? 'px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium bg-charcoal text-white dark:bg-white dark:text-charcoal transition cursor-pointer' : 'px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium text-charcoal dark:text-stone-300 transition cursor-pointer';
+      document.getElementById('cr-bowl').className = role === 'bowl' ? 'px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium bg-charcoal text-white dark:bg-white dark:text-charcoal transition cursor-pointer' : 'px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium text-charcoal dark:text-stone-300 transition cursor-pointer';
+      renderCharts();
+    }
+
+    function renderCharts() {
+      const c = pPalette();
+      const pool = chartRole === 'bat' ? D.batters : D.bowlers;
       const top = pool.slice(0, 10);
       const rest = pool.slice(10);
-      Plotly.newPlot('ov-scatter', [
+
+      document.getElementById('quad-title').textContent = chartRole === 'bat'
+        ? 'Batters: Usual Baseline vs. High-Pressure Impact'
+        : 'Bowlers: Usual Baseline vs. High-Pressure Impact';
+      document.getElementById('boot-title').textContent = chartRole === 'bat'
+        ? 'Top 10 Batters: 1,000x Bootstrap 90% CI'
+        : 'Top 10 Bowlers: 1,000x Bootstrap 90% CI';
+
+      // 1. Quadrant Scatter
+      Plotly.newPlot('chart-quadrant', [
         {
           x: rest.map(r => r.norm_rate_eb), y: rest.map(r => r.hp_rate_eb),
-          text: rest.map(r => `#${r.rank} ${r.name}<br>PRR ${r.prr} | HP EB ${r.hp_rate_eb} | Norm ${r.norm_rate_eb}`),
-          hoverinfo: 'text', mode: 'markers', name: `Eligible (${rest.length})`,
-          marker: { size: 8, color: '#4F7DF3', opacity: 0.55 }
+          text: rest.map(r => `#${r.rank} ${r.name}<br>PRR ${r.prr} · HP EB ${r.hp_rate_eb} · Norm ${r.norm_rate_eb}`),
+          hoverinfo: 'text', mode: 'markers', name: `Other Eligible (${rest.length})`,
+          marker: { size: rest.map(r => Math.max(7, Math.min(18, r.hp_balls/30))), color: c.rest, opacity: 0.65 }
         },
         {
           x: top.map(r => r.norm_rate_eb), y: top.map(r => r.hp_rate_eb),
-          text: top.map(r => `<b>#${r.rank} ${r.name}</b><br>PRR ${r.prr} | HP EB +${r.hp_rate_eb} | Delta ${r.pressure_delta>=0?'+':''}${r.pressure_delta}`),
-          hoverinfo: 'text', mode: 'markers', name: 'Top 10 Picks',
-          marker: { size: 11.5, color: '#EC2B82', line: { color: '#FFFFFF', width: 1.4 } }
+          text: top.map(r => `#${r.rank} ${r.name.split(' ').slice(-1)[0]}`),
+          hovertext: top.map(r => `<b>#${r.rank} ${r.name}</b><br>PRR ${r.prr} · HP EB +${r.hp_rate_eb} · Delta ${r.pressure_delta>=0?'+':''}${r.pressure_delta}`),
+          hoverinfo: 'text', mode: 'markers+text', textposition: 'top center',
+          textfont: { size: 9.5, color: c.ink, family: '"Plus Jakarta Sans", sans-serif' },
+          name: 'Top 10 Picks',
+          marker: { size: top.map(r => Math.max(10, Math.min(20, r.hp_balls/28))), color: c.accent, line: { color: isDark() ? '#1B1B19' : '#FFFFFF', width: 1.5 } }
         },
-        { x: [-30, 38], y: [-30, 38], mode: 'lines', name: 'Parity (HP=Norm)', line: { dash: 'dash', color: '#38BDF8', width: 1.2 }, hoverinfo: 'skip' }
-      ], baseLayout({
-        xaxis: { title: 'Normal Baseline (EB Runs/100b)', gridcolor: themeColors().grid },
-        yaxis: { title: 'High-Pressure Impact (EB Runs/100b)', gridcolor: themeColors().grid }
+        { x: [-32, 40], y: [-32, 40], mode: 'lines', name: 'Parity (HP = Normal)', line: { dash: 'dot', color: c.muted, width: 1.2 }, hoverinfo: 'skip' }
+      ], pLayout({
+        xaxis: { title: 'Normal-Situation Impact (EB Runs / 100b)', gridcolor: c.grid },
+        yaxis: { title: 'High-Pressure Impact (EB Runs / 100b)', gridcolor: c.grid }
       }), PLOT_CFG);
-    }
 
-    function renderOvDonut() {
-      const drv = D.meta.wp_model.hp_driver_share;
-      const collapse = +( (drv['1st-Inn Collapse']||0) + (drv['Chase Collapse']||0) ).toFixed(1);
-      const chase = +( (drv['Live Middle Chase']||0) + (drv['High-RRR Chase']||0) ).toFixed(1);
-      const death = +( (drv['1st-Inn Death']||0) + (drv['Tight Chase / Death']||0) ).toFixed(1);
-      const other = Math.max(0.1, +(100 - collapse - chase - death).toFixed(1));
-      Plotly.newPlot('ov-donut', [{
-        type: 'pie', hole: 0.58,
-        labels: ['Collapses', 'Death Crunch', 'Live Chases', 'Super Over / Rebuild'],
-        values: [collapse, death, chase, other],
-        marker: { colors: ['#4F7DF3', '#EC2B82', '#8B5CF6', '#38BDF8'] },
-        textinfo: 'percent', textfont: { color: '#FFFFFF', size: 10.5, family: 'JetBrains Mono' },
-        hovertemplate: '%{label}: %{value:.1f}%<extra></extra>'
-      }], {
-        paper_bgcolor: 'rgba(0,0,0,0)', margin: { l: 8, r: 8, t: 8, b: 36 },
-        font: { color: themeColors().text, size: 10 },
-        legend: { orientation: 'h', y: -0.15, x: 0.5, xanchor: 'center', font: { size: 9.5 } }
-      }, PLOT_CFG);
-    }
+      // 2. Bootstrap Forest
+      const rev = top.slice().reverse();
+      Plotly.newPlot('chart-bootstrap', [{
+        type: 'scatter', mode: 'markers',
+        y: rev.map(r => `#${r.rank} ${r.name}`), x: rev.map(r => r.boot_mean_inns),
+        error_x: {
+          type: 'data', symmetric: false,
+          array: rev.map(r => r.boot_ci_high - r.boot_mean_inns),
+          arrayminus: rev.map(r => r.boot_mean_inns - r.boot_ci_low),
+          color: c.ink, thickness: 1.8, width: 4
+        },
+        marker: { color: c.accent, size: 7.5 },
+        text: rev.map(r => `Mean: +${r.boot_mean_inns} runs/inn<br>90% CI: [${r.boot_ci_low}, ${r.boot_ci_high}]<br>P(>0): ${r.boot_prob_pos}% (${r.hp_inns} inns)`),
+        hoverinfo: 'text'
+      }], pLayout({
+        margin: { l: 128, r: 16, t: 10, b: 38 },
+        xaxis: { title: 'Mean Net Impact / HP Innings (90% CI)', gridcolor: c.grid },
+        shapes: [{ type: 'line', x0: 0, x1: 0, y0: -0.5, y1: 9.5, line: { color: c.muted, dash: 'dash', width: 1.2 } }]
+      }), PLOT_CFG);
 
-    function setMatrixRole(r) {
-      matrixRole = r;
-      document.getElementById('mx-bat').className = r === 'bat' ? 'px-2.5 py-1 rounded-md bg-pink-600 text-white font-bold cursor-pointer' : 'px-2.5 py-1 rounded-md text-slate-300 font-bold cursor-pointer';
-      document.getElementById('mx-bowl').className = r === 'bowl' ? 'px-2.5 py-1 rounded-md bg-indigo-600 text-white font-bold cursor-pointer' : 'px-2.5 py-1 rounded-md text-slate-300 font-bold cursor-pointer';
-      renderPriorityMatrix();
-    }
-
-    function renderPriorityMatrix() {
-      const q = (document.getElementById('mx-search').value || '').toLowerCase();
-      const rows = (matrixRole === 'bat' ? D.batters : D.bowlers).slice(0, 15).filter(r => !q || r.name.toLowerCase().includes(q));
-      const head = document.getElementById('mx-head');
-      const body = document.getElementById('mx-body');
-      if (matrixRole === 'bat') {
-        head.innerHTML = '<tr><th class="p-2">Rk</th><th class="p-2">Player</th><th class="p-2">Role / Pos</th><th class="p-2">HP SR (TSR)</th><th class="p-2">Boot Conf.</th><th class="p-2 text-center">Tier</th></tr>';
-        body.innerHTML = rows.map(r => `
-          <tr onclick="openPlayerModal('bat','${r.name.replace(/'/g,"\\'")}')" class="hover:bg-pink-500/10 cursor-pointer">
-            <td class="p-2 font-mono font-bold ${r.rank<=10?'text-pink-400':'text-slate-500'}">#${r.rank}</td>
-            <td class="p-2 font-bold">${r.name}</td>
-            <td class="p-2 text-slate-400">Pos ${r.avg_bat_pos} • ${r.ipl_team}</td>
-            <td class="p-2 font-mono">${r.hp_sr} <span class="text-emerald-400">(${r.hp_tsr>=0?'+':''}${r.hp_tsr})</span></td>
-            <td class="p-2 font-mono">${Math.round(r.boot_prob_pos||95)}% <span class="text-slate-400">(PRR ${r.prr})</span></td>
-            <td class="p-2 text-center"><span class="${r.rank<=10?'badge-high':'badge-med'} px-2.5 py-0.5 rounded-full text-[10px] font-bold">${r.rank<=10?'TOP 10':'BACKUP'}</span></td>
-          </tr>`).join('');
-      } else {
-        head.innerHTML = '<tr><th class="p-2">Rk</th><th class="p-2">Player</th><th class="p-2">Style / Team</th><th class="p-2">HP Econ (Saved)</th><th class="p-2">Boot Conf.</th><th class="p-2 text-center">Tier</th></tr>';
-        body.innerHTML = rows.map(r => `
-          <tr onclick="openPlayerModal('bowl','${r.name.replace(/'/g,"\\'")}')" class="hover:bg-sky-500/10 cursor-pointer">
-            <td class="p-2 font-mono font-bold ${r.rank<=10?'text-sky-400':'text-slate-500'}">#${r.rank}</td>
-            <td class="p-2 font-bold">${r.name}</td>
-            <td class="p-2 text-slate-400">${r.pace_spin} • ${r.ipl_team}</td>
-            <td class="p-2 font-mono">${r.hp_econ.toFixed(2)} <span class="text-emerald-400">(+${r.hp_econ_saved.toFixed(2)})</span></td>
-            <td class="p-2 font-mono">${Math.round(r.boot_prob_pos||95)}% <span class="text-slate-400">(PRR ${r.prr})</span></td>
-            <td class="p-2 text-center"><span class="${r.rank<=10?'badge-high':'badge-med'} px-2.5 py-0.5 rounded-full text-[10px] font-bold">${r.rank<=10?'TOP 10':'BACKUP'}</span></td>
-          </tr>`).join('');
-      }
-    }
-
-    // --- SECTION 2: PURSE TRACKER ---
-    const TARGETS = [
-      { id: 'shashank', name: 'Shashank Singh', role: 'Finisher (#5–#7)', cat: 'Finishers', prr: 71.9, cost: 6.5, mkt: 8.0, os: false, ev: '56.8 Avg • 168 SR • 75% +Inns', pri: 'HIGH' },
-      { id: 'ashutosh', name: 'Ashutosh Sharma', role: 'Finisher (#6–#7)', cat: 'Finishers', prr: 67.5, cost: 4.5, mkt: 6.0, os: false, ev: '177.1 HP SR • +16.4 Delta', pri: 'HIGH' },
-      { id: 'zampa', name: 'Adam Zampa', role: 'Middle-Overs Spin', cat: 'Spinners', prr: 76.8, cost: 5.0, mkt: 7.5, os: true, ev: '24W @ 12.1 SR • +23.6 Delta', pri: 'HIGH' },
-      { id: 'mujeeb', name: 'Mujeeb Ur Rahman', role: 'PP/Mid Mystery Spin', cat: 'Spinners', prr: 75.5, cost: 4.0, mkt: 5.5, os: true, ev: '5.67 Econ (+2.02 saved/ov)', pri: 'HIGH' },
-      { id: 'hazlewood', name: 'Josh Hazlewood', role: 'Pace Enforcer', cat: 'Fast Bowlers', prr: 75.3, cost: 12.0, mkt: 13.5, os: true, ev: '33W @ 7.53 Econ (+1.39 saved)', pri: 'HIGH' },
-      { id: 'mohsin', name: 'Mohsin Khan', role: 'Left-Arm Death Pace', cat: 'Fast Bowlers', prr: 67.8, cost: 4.5, mkt: 6.0, os: false, ev: '7.69 HP Econ (+1.47 saved)', pri: 'MEDIUM' },
-      { id: 'david', name: 'Tim David', role: 'Overseas Finisher', cat: 'Finishers', prr: 79.6, cost: 11.0, mkt: 12.5, os: true, ev: '187.1 HP SR (+40.4 TSR)', pri: 'HIGH' },
-      { id: 'muqeem', name: 'Sufiyan Muqeem', role: 'Watchlist Wrist Spin', cat: 'Watchlist', prr: 83.5, cost: 1.5, mkt: 2.5, os: true, ev: '4.46 HP Econ • 12W (136b)', pri: 'MEDIUM' }
-    ];
-    let activeTargets = new Set(['shashank', 'zampa', 'hazlewood', 'mohsin']);
-
-    function togglePurseTarget(id) {
-      if (activeTargets.has(id)) activeTargets.delete(id); else activeTargets.add(id);
-      renderPurseSection();
-    }
-
-    function renderPurseSection() {
-      const picked = TARGETS.filter(t => activeTargets.has(t.id));
-      const spend = picked.reduce((s, t) => s + t.cost, 0);
-      const rem = Math.max(0, 42.5 - spend);
-      const avgPrr = picked.length ? picked.reduce((s, t) => s + t.prr, 0) / picked.length : 0;
-      const pct = Math.min(100, Math.round((spend / 42.5) * 100));
-
-      document.getElementById('p-rem').textContent = `₹${rem.toFixed(2)} Cr`;
-      document.getElementById('p-bar').style.width = `${Math.min(100, ((77.5 + spend)/120)*100)}%`;
-      document.getElementById('p-spent-sub').textContent = `Projected Total: ₹${(77.5 + spend).toFixed(1)} Cr / ₹120 Cr`;
-      document.getElementById('p-cart-cost').textContent = `₹${spend.toFixed(1)} Cr`;
-      document.getElementById('p-cart-cnt').textContent = `${picked.length} Targets Selected`;
-      document.getElementById('p-ring').setAttribute('stroke-dashoffset', (119.4 * (1 - pct/100)).toFixed(1));
-      document.getElementById('p-ring-lbl').textContent = `${pct}%`;
-      document.getElementById('p-avg-prr').textContent = avgPrr.toFixed(1);
-      document.getElementById('p-eff-pill').textContent = spend <= 42.5 ? 'Optimal' : 'Over Cap';
-
-      document.getElementById('purse-table-body').innerHTML = TARGETS.map(t => {
-        const on = activeTargets.has(t.id);
-        return `<tr onclick="togglePurseTarget('${t.id}')" class="cursor-pointer transition-colors ${on ? 'bg-pink-500/15' : 'hover:bg-white/5'}">
-          <td class="p-2.5 font-bold">${on ? '✓ ' : '+ '}${t.name} ${t.os ? '<span class="text-sky-400 text-[10px]">✈</span>' : ''}</td>
-          <td class="p-2.5 text-slate-400">${t.role}</td>
-          <td class="p-2.5 text-right font-mono font-bold text-pink-300">${t.prr}</td>
-          <td class="p-2.5 text-right font-mono">₹${t.cost.toFixed(1)} Cr</td>
-          <td class="p-2.5 text-slate-300">${t.ev}</td>
-          <td class="p-2.5 text-center"><span class="${t.pri==='HIGH'?'badge-high':'badge-med'} px-2 py-0.5 rounded-full text-[10px] font-bold">${t.pri}</span></td>
-        </tr>`;
-      }).join('');
-
-      // Cumulative Area Chart (ref_03)
-      const rounds = [1,2,3,4,5,6,7,8];
-      let cumOpt = 0, cumMkt = 0;
-      const yOpt = [], yMkt = [];
-      TARGETS.forEach(t => { cumOpt += t.cost; cumMkt += t.mkt; yOpt.push(cumOpt); yMkt.push(cumMkt); });
-      Plotly.newPlot('purse-area-chart', [
-        { x: rounds, y: yMkt, name: 'Market Inflation Ceiling', mode: 'lines', line: { color: '#4F7DF3', dash: 'dot', width: 2 }, fill: 'tozeroy', fillcolor: 'rgba(79,125,243,0.14)' },
-        { x: rounds, y: yOpt, name: 'RR Optimal Valuation Curve', mode: 'lines', line: { color: '#EC2B82', width: 2.5 }, fill: 'tozeroy', fillcolor: 'rgba(236,43,130,0.24)' }
-      ], baseLayout({ xaxis: { title: 'Target Acquisition Round', gridcolor: themeColors().grid }, yaxis: { title: 'Cumulative Spend (₹ Cr)', gridcolor: themeColors().grid } }), PLOT_CFG);
-
-      // Role Bars (ref_03)
-      const cats = ['Finishers', 'Spinners', 'Fast Bowlers', 'Watchlist'];
-      const cMkt = cats.map(c => TARGETS.filter(t => t.cat === c).reduce((s,t) => s + t.mkt, 0));
-      const cOpt = cats.map(c => TARGETS.filter(t => t.cat === c).reduce((s,t) => s + t.cost, 0));
-      Plotly.newPlot('purse-bar-chart', [
-        { type: 'bar', name: 'Market Est.', x: cats, y: cMkt, marker: { color: 'rgba(79,125,243,0.35)', line: { color: '#4F7DF3', width: 1.5 } } },
-        { type: 'bar', name: 'RR Optimal', x: cats, y: cOpt, marker: { color: '#EC2B82' } }
-      ], baseLayout({ barmode: 'group', yaxis: { title: 'Valuation (₹ Cr)', gridcolor: themeColors().grid } }), PLOT_CFG);
-
-      // Purse Donut
-      const activeCats = cats.map(c => picked.filter(t => t.cat === c).reduce((s,t) => s + t.cost, 0));
-      Plotly.newPlot('purse-donut', [{
-        type: 'pie', hole: 0.58, labels: cats, values: activeCats.some(v=>v>0) ? activeCats : [1,1,1,1],
-        marker: { colors: ['#EC2B82', '#4F7DF3', '#8B5CF6', '#38BDF8'] },
-        textinfo: 'percent', textfont: { color: '#FFFFFF', size: 10.5 }
-      }], {
-        paper_bgcolor: 'rgba(0,0,0,0)', margin: { l: 8, r: 8, t: 8, b: 36 },
-        font: { color: themeColors().text, size: 10 },
-        legend: { orientation: 'h', y: -0.15, x: 0.5, xanchor: 'center' }
-      }, PLOT_CFG);
-    }
-
-    // --- SECTION 3: PLAYER SCOUTING ---
-    function renderScoutingCharts() {
-      const b15 = D.batters.slice(0, 15).reverse();
-      Plotly.newPlot('sc-bat-bar', [{
-        type: 'bar', orientation: 'h',
-        y: b15.map(r => `#${r.rank} ${r.name}`), x: b15.map(r => r.prr),
-        text: b15.map(r => `${r.prr.toFixed(1)}`), textposition: 'outside',
-        marker: { color: b15.map(r => r.rank <= 3 ? '#EC2B82' : (r.rank <= 10 ? '#4F7DF3' : '#64748B')) }
-      }], baseLayout({ margin: { l: 132, r: 36, t: 10, b: 32 }, xaxis: { title: 'PRR (0–100)', range: [0, 92], gridcolor: themeColors().grid } }), PLOT_CFG);
-
-      const w15 = D.bowlers.slice(0, 15).reverse();
-      Plotly.newPlot('sc-bowl-bar', [{
-        type: 'bar', orientation: 'h',
-        y: w15.map(r => `#${r.rank} ${r.name}`), x: w15.map(r => r.hp_econ_saved),
-        text: w15.map(r => `+${r.hp_econ_saved.toFixed(2)} (${r.hp_wkts}W)`), textposition: 'outside',
-        marker: { color: w15.map(r => r.name === 'Jasprit Bumrah' ? '#F59E0B' : (r.rank <= 10 ? '#38BDF8' : '#64748B')) }
-      }], baseLayout({ margin: { l: 136, r: 62, t: 10, b: 32 }, xaxis: { title: 'Runs Saved / Over Under Pressure', range: [0, 2.7], gridcolor: themeColors().grid } }), PLOT_CFG);
-
-      const gems = [
-        ...D.gems.batters.slice(0, 4).map(g => ({ ...g, kind: 'BAT', stat: `HP SR ${g.hp_sr} • ${g.hp_balls}b` })),
-        ...D.gems.bowlers.slice(0, 5).map(g => ({ ...g, kind: 'BOWL', stat: `Econ ${g.hp_econ.toFixed(2)} • ${g.hp_wkts}W (${g.hp_balls}b)` }))
-      ];
-      document.getElementById('sc-gems-list').innerHTML = gems.map(g => `
-        <div class="p-2.5 rounded-xl bg-black/25 border border-white/10 flex items-center justify-between gap-2">
-          <div>
-            <div class="text-[10px] font-mono ${g.kind==='BAT'?'text-pink-400':'text-teal-400'} font-bold">${g.kind} • ${g.ipl_team}</div>
-            <div class="text-xs font-bold">${g.name}</div>
-            <div class="text-[10.5px] text-slate-400">${g.stat}</div>
-          </div>
-          <span class="px-2 py-0.5 rounded-md bg-white/10 font-mono text-xs font-black text-sky-300">${g.prr}</span>
-        </div>`).join('');
-    }
-
-    function setExplorerMode(m) {
-      explorerMode = m;
-      document.getElementById('exp-bat-btn').className = m === 'bat' ? 'px-2.5 py-1 rounded bg-pink-600 text-white font-bold cursor-pointer' : 'px-2.5 py-1 rounded text-slate-300 font-bold cursor-pointer';
-      document.getElementById('exp-bowl-btn').className = m === 'bowl' ? 'px-2.5 py-1 rounded bg-indigo-600 text-white font-bold cursor-pointer' : 'px-2.5 py-1 rounded text-slate-300 font-bold cursor-pointer';
-      renderExplorerTable();
-    }
-
-    function renderExplorerTable() {
-      const q = (document.getElementById('exp-search').value || '').toLowerCase();
-      const rows = (explorerMode === 'bat' ? D.batters : D.bowlers).filter(r => !q || r.name.toLowerCase().includes(q) || (r.ipl_team||'').toLowerCase().includes(q));
-      const thead = document.getElementById('exp-thead');
-      const tbody = document.getElementById('exp-tbody');
-      if (explorerMode === 'bat') {
-        thead.innerHTML = '<tr><th class="p-2">Rk</th><th class="p-2">Batter</th><th class="p-2">Team</th><th class="p-2 text-right">PRR</th><th class="p-2 text-right">HP EB</th><th class="p-2 text-right">Delta</th><th class="p-2 text-right">HP SR</th><th class="p-2 text-right">Avg</th><th class="p-2 text-right">+Inns</th></tr>';
-        tbody.innerHTML = rows.map(r => `<tr onclick="openPlayerModal('bat','${r.name.replace(/'/g,"\\'")}')" class="hover:bg-pink-500/10 cursor-pointer ${r.rank<=10?'bg-pink-500/5':''}">
-          <td class="p-2 font-mono font-bold ${r.rank<=10?'text-pink-400':'text-slate-500'}">#${r.rank}</td>
-          <td class="p-2 font-bold">${r.name}</td><td class="p-2 text-slate-400">${r.ipl_team}</td>
-          <td class="p-2 text-right font-mono font-bold text-pink-300">${r.prr.toFixed(1)}</td>
-          <td class="p-2 text-right font-mono">${r.hp_rate_eb>=0?'+':''}${r.hp_rate_eb.toFixed(1)}</td>
-          <td class="p-2 text-right font-mono ${r.pressure_delta>=0?'text-emerald-400':'text-rose-400'}">${r.pressure_delta>=0?'+':''}${r.pressure_delta.toFixed(1)}</td>
-          <td class="p-2 text-right font-mono">${r.hp_sr}</td><td class="p-2 text-right font-mono">${r.hp_avg}</td>
-          <td class="p-2 text-right font-mono">${Math.round(r.pos_inns_pct)}%</td></tr>`).join('');
-      } else {
-        thead.innerHTML = '<tr><th class="p-2">Rk</th><th class="p-2">Bowler</th><th class="p-2">Type</th><th class="p-2 text-right">PRR</th><th class="p-2 text-right">HP EB</th><th class="p-2 text-right">Delta</th><th class="p-2 text-right">Econ</th><th class="p-2 text-right">Wkts</th><th class="p-2 text-right">+Sp%</th></tr>';
-        tbody.innerHTML = rows.map(r => `<tr onclick="openPlayerModal('bowl','${r.name.replace(/'/g,"\\'")}')" class="hover:bg-sky-500/10 cursor-pointer ${r.rank<=10?'bg-sky-500/5':''}">
-          <td class="p-2 font-mono font-bold ${r.rank<=10?'text-sky-400':'text-slate-500'}">#${r.rank}</td>
-          <td class="p-2 font-bold">${r.name}</td><td class="p-2 text-slate-400">${r.pace_spin}</td>
-          <td class="p-2 text-right font-mono font-bold text-sky-300">${r.prr.toFixed(1)}</td>
-          <td class="p-2 text-right font-mono">${r.hp_rate_eb>=0?'+':''}${r.hp_rate_eb.toFixed(1)}</td>
-          <td class="p-2 text-right font-mono ${r.pressure_delta>=0?'text-emerald-400':'text-rose-400'}">${r.pressure_delta>=0?'+':''}${r.pressure_delta.toFixed(1)}</td>
-          <td class="p-2 text-right font-mono">${r.hp_econ.toFixed(2)}</td><td class="p-2 text-right font-mono">${r.hp_wkts}</td>
-          <td class="p-2 text-right font-mono">${Math.round(r.pos_inns_pct)}%</td></tr>`).join('');
-      }
-    }
-
-    // --- SECTION 4: INTERACTIVE PLAYING XI PITCH VISUALIZER (from ref_09!) ---
-    const DEFAULT_XI = [
-      { pos: 1, name: 'Yashasvi Jaiswal', role: 'BAT', os: false, prr: 76.9, tag: 'RR Core' },
-      { pos: 2, name: 'Pathum Nissanka', role: 'BAT', os: true, prr: 74.2, tag: 'Top-10 #2' },
-      { pos: 3, name: 'Dhruv Jurel', role: 'WK', os: false, prr: 68.3, tag: 'RR Core' },
-      { pos: 4, name: 'Riyan Parag', role: 'ALL', os: false, prr: 62.5, tag: 'RR Core' },
-      { pos: 5, name: 'Shashank Singh', role: 'BAT', os: false, prr: 71.9, tag: 'Top-10 #4' },
-      { pos: 6, name: 'Tim David', role: 'BAT', os: true, prr: 79.6, tag: 'Top-10 #1' },
-      { pos: 7, name: 'Ashutosh Sharma', role: 'BAT', os: false, prr: 67.5, tag: 'Top-10 #8' },
-      { pos: 8, name: 'Adam Zampa', role: 'SPIN', os: true, prr: 76.8, tag: 'Top-10 #2' },
-      { pos: 9, name: 'Josh Hazlewood', role: 'PACE', os: true, prr: 75.3, tag: 'Top-10 #4' },
-      { pos: 10, name: 'Kuldeep Yadav', role: 'SPIN', os: false, prr: 71.2, tag: 'Top-10 #10' },
-      { pos: 11, name: 'Mohsin Khan', role: 'PACE', os: false, prr: 67.8, tag: 'Backup #15' }
-    ];
-    const BENCH_POOL = [
-      { name: 'Varun Chakravarthy', role: 'SPIN', os: false, prr: 79.8, tag: 'Top-10 #1' },
-      { name: 'Mujeeb Ur Rahman', role: 'SPIN', os: true, prr: 75.5, tag: 'Top-10 #3' },
-      { name: 'Jofra Archer', role: 'PACE', os: true, prr: 64.5, tag: 'RR Pace' },
-      { name: 'Naman Dhir', role: 'BAT', os: false, prr: 65.8, tag: 'Backup #11' },
-      { name: 'Sufiyan Muqeem', role: 'SPIN', os: true, prr: 83.5, tag: 'Gem Watch' },
-      { name: 'Mayank Yadav', role: 'PACE', os: false, prr: 79.8, tag: 'Gem Watch' },
-      { name: 'Mitchell Santner', role: 'SPIN', os: true, prr: 73.2, tag: 'Top-10 #6' },
-      { name: 'Nicholas Pooran', role: 'WK', os: true, prr: 66.3, tag: 'Top-10 #10' },
-      { name: 'Jasprit Bumrah', role: 'PACE', os: false, prr: 70.3, tag: 'Case #11' },
-      { name: 'Rasikh Salam', role: 'PACE', os: false, prr: 72.2, tag: 'Gem Watch' }
-    ];
-    let currentXI = DEFAULT_XI.map(p => ({ ...p }));
-
-    function resetXI() {
-      currentXI = DEFAULT_XI.map(p => ({ ...p }));
-      swapSlotIdx = null;
-      renderXI();
-    }
-
-    function selectSlotToSwap(idx) {
-      swapSlotIdx = (swapSlotIdx === idx) ? null : idx;
-      document.getElementById('swap-hint').textContent = swapSlotIdx !== null
-        ? `Replacing #${idx+1} ${currentXI[idx].name} — click "+ Add/Sub" on any bench player!`
-        : 'Click "Swap" on any Pitch slot, then click "+ Add/Sub" below.';
-      renderXI();
-    }
-
-    function swapFromBench(benchName) {
-      if (swapSlotIdx === null) { showToast("First click 'Swap' on one of the 11 players on the pitch!"); return; }
-      const b = BENCH_POOL.find(x => x.name === benchName);
-      if (!b) return;
-      currentXI[swapSlotIdx] = { pos: swapSlotIdx + 1, ...b };
-      showToast(`Swapped in ${b.name} at #${swapSlotIdx + 1}!`);
-      swapSlotIdx = null;
-      document.getElementById('swap-hint').textContent = 'Click "Swap" on any Pitch slot, then click "+ Add/Sub" below.';
-      renderXI();
-    }
-
-    function renderBench() {
-      const q = (document.getElementById('bench-search').value || '').toLowerCase();
-      const inXI = new Set(currentXI.map(p => p.name));
-      const avail = BENCH_POOL.filter(p => !inXI.has(p.name) && (!q || p.name.toLowerCase().includes(q)));
-      document.getElementById('bench-list').innerHTML = avail.map(p => `
-        <div class="p-2.5 rounded-xl bg-black/30 border border-white/10 space-y-2">
-          <div class="flex items-center justify-between gap-2">
-            <div>
-              <div class="text-xs font-bold">${p.name} ${p.os ? '<span class="text-sky-400">✈</span>' : ''}</div>
-              <div class="text-[10px] text-slate-400">${p.tag} • PRR <strong class="text-pink-300">${p.prr}</strong></div>
-            </div>
-            <span class="px-2 py-0.5 rounded text-[9.5px] font-bold bg-white/10 text-sky-300">${p.role}</span>
-          </div>
-          <button onclick="swapFromBench('${p.name.replace(/'/g,"\\'")}')" class="w-full py-1 rounded-lg bg-gradient-to-r from-pink-600/80 to-indigo-600/80 hover:from-pink-500 hover:to-indigo-500 text-white text-[10.5px] font-bold cursor-pointer">
-            + Add / Sub into XI
-          </button>
-        </div>`).join('');
-    }
-
-    function renderXI() {
-      const rows = [
-        currentXI.slice(0, 2),   // Openers
-        currentXI.slice(2, 5),   // Middle Order
-        currentXI.slice(5, 8),   // Finishers / Spin AR
-        currentXI.slice(8, 11)   // Core Bowlers
-      ];
-      document.getElementById('pitch-xi-grid').innerHTML = rows.map(grp => `
-        <div class="grid ${grp.length === 2 ? 'grid-cols-2 max-w-md mx-auto' : 'grid-cols-3'} gap-2.5">
-          ${grp.map(p => {
-            const idx = p.pos - 1;
-            const sel = swapSlotIdx === idx;
-            const roleCol = p.role==='SPIN'?'bg-purple-500/30 text-purple-200':(p.role==='PACE'?'bg-sky-500/30 text-sky-200':(p.role==='WK'?'bg-amber-500/30 text-amber-200':'bg-pink-500/30 text-pink-200'));
-            return `<div class="xi-slot ${sel ? 'selected-swap' : ''} rounded-xl p-2.5 text-center space-y-1.5">
-              <div class="flex items-center justify-between text-[9.5px]">
-                <span class="w-4 h-4 rounded-full bg-white/15 font-mono font-bold flex items-center justify-center">${p.pos}</span>
-                <span class="px-1.5 py-0.5 rounded font-bold ${roleCol}">${p.role}${p.os?' ✈':''}</span>
-              </div>
-              <div class="text-xs font-extrabold text-white leading-tight truncate" title="${p.name}">${p.name}</div>
-              <div class="flex items-center justify-between text-[10px] pt-1 border-t border-white/10">
-                <span class="font-mono text-pink-300 font-bold">PRR ${p.prr}</span>
-                <button onclick="selectSlotToSwap(${idx})" class="px-2 py-0.5 rounded bg-white/10 hover:bg-pink-600 text-[9.5px] font-bold text-white cursor-pointer">${sel?'Cancel':'Swap'}</button>
-              </div>
-            </div>`;
-          }).join('')}
-        </div>`).join('');
-
-      const avgStr = currentXI.reduce((s,p) => s + p.prr, 0) / 11;
-      const osCnt = currentXI.filter(p => p.os).length;
-      const spinCnt = currentXI.filter(p => p.role === 'SPIN').length;
-      const paceCnt = currentXI.filter(p => p.role === 'PACE').length;
-      const finCnt = currentXI.slice(4, 7).length;
-
-      document.getElementById('xi-strength').textContent = `${avgStr.toFixed(1)} PRR`;
-      document.getElementById('xi-os').textContent = `${osCnt} / 4`;
-      document.getElementById('xi-os').className = osCnt > 4 ? 'text-rose-400 font-bold' : 'text-sky-300 font-bold';
-
-      document.getElementById('xi-insights').innerHTML = `
-        <li>• <strong>Overseas Quota:</strong> ${osCnt} / 4 in Playing XI ${osCnt > 4 ? '<span class="text-rose-400 font-bold">(Exceeds IPL limit — swap 1 OS!)</span>' : '<span class="text-emerald-400 font-bold">(Compliant ✓)</span>'}</li>
-        <li>• <strong>Jaipur Spin Choke:</strong> ${spinCnt} frontline pressure spinners active for Sawai Mansingh's large square boundaries.</li>
-        <li>• <strong>Pace &amp; Finisher Depth:</strong> ${paceCnt} high-leverage pacers + ${finCnt} clutch lower-middle hitters averaging <strong>${avgStr.toFixed(1)} PRR</strong>.</li>
-      `;
-
-      const c = themeColors();
-      Plotly.newPlot('xi-radar', [{
-        type: 'scatterpolar',
-        r: [Math.min(98, 60 + paceCnt * 14), Math.min(98, 55 + spinCnt * 18), Math.min(98, avgStr + 16), Math.min(98, avgStr + 12), Math.min(98, 58 + finCnt * 12), Math.min(98, 60 + paceCnt * 14)],
-        theta: ['Pace', 'Spin', 'Clutch PRR', 'Death', 'Finishers', 'Pace'],
-        fill: 'toself', fillcolor: 'rgba(236, 43, 130, 0.25)', line: { color: '#EC2B82', width: 2.2 }
-      }], {
-        paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-        font: { color: c.text, size: 9.5 }, margin: { l: 30, r: 30, t: 16, b: 16 },
-        polar: { bgcolor: 'rgba(0,0,0,0)', radialaxis: { visible: false, range: [0, 100] }, angularaxis: { gridcolor: c.grid } }
-      }, PLOT_CFG);
-
-      renderBench();
-    }
-
-    // --- SECTION 5: DATA MODELS & SIMULATOR ---
-    function renderModelCharts() {
+      // 3. Calibration
       const cal = D.calibration;
       const keys = Object.keys(cal);
-      Plotly.newPlot('mod-calib-chart', [
-        { type: 'bar', name: 'Wicket Rate (% / ball)', x: keys, y: keys.map(k => cal[k].wkt_pct_per_ball), marker: { color: '#EC2B82' }, text: keys.map(k => `${cal[k].wkt_pct_per_ball}%`), textposition: 'outside' },
-        { type: 'bar', name: 'Boundary Rate (%)', x: keys, y: keys.map(k => cal[k].boundary_pct), marker: { color: '#4F7DF3' }, text: keys.map(k => `${cal[k].boundary_pct}%`), textposition: 'outside' }
-      ], baseLayout({ barmode: 'group', yaxis: { title: 'Rate (%)', range: [0, 25], gridcolor: themeColors().grid } }), PLOT_CFG);
+      Plotly.newPlot('chart-calibration', [
+        { type: 'bar', name: 'Wicket Rate (% / ball)', x: keys, y: keys.map(k => cal[k].wkt_pct_per_ball), marker: { color: c.accent }, text: keys.map(k => `${cal[k].wkt_pct_per_ball}%`), textposition: 'outside' },
+        { type: 'bar', name: 'Boundary Rate (%)', x: keys, y: keys.map(k => cal[k].boundary_pct), marker: { color: c.ink }, text: keys.map(k => `${cal[k].boundary_pct}%`), textposition: 'outside' }
+      ], pLayout({ barmode: 'group', yaxis: { title: 'Rate (%)', range: [0, 25], gridcolor: c.grid } }), PLOT_CFG);
 
-      Plotly.newPlot('mod-weights-donut', [{
-        type: 'pie', hole: 0.58,
-        labels: ['HP Impact (EB)', 'Pressure Resilience', 'Match Consistency'],
-        values: [60, 20, 20],
-        marker: { colors: ['#EC2B82', '#4F7DF3', '#38BDF8'] },
-        textinfo: 'percent', textfont: { color: '#FFFFFF', size: 11 }
-      }], {
-        paper_bgcolor: 'rgba(0,0,0,0)', margin: { l: 8, r: 8, t: 8, b: 36 },
-        font: { color: themeColors().text, size: 10 },
-        legend: { orientation: 'h', y: -0.15, x: 0.5, xanchor: 'center' }
-      }, PLOT_CFG);
-
-      function makeBoot(elId, rows, col) {
-        const rev = rows.slice(0, 10).reverse();
-        Plotly.newPlot(elId, [{
-          type: 'scatter', mode: 'markers',
-          y: rev.map(r => `#${r.rank} ${r.name}`), x: rev.map(r => r.boot_mean_inns),
-          error_x: {
-            type: 'data', symmetric: false,
-            array: rev.map(r => r.boot_ci_high - r.boot_mean_inns),
-            arrayminus: rev.map(r => r.boot_mean_inns - r.boot_ci_low),
-            color: col, thickness: 2.2, width: 5
-          },
-          marker: { color: '#FFFFFF', size: 7.5, line: { color: col, width: 2.2 } },
-          text: rev.map(r => `Mean: +${r.boot_mean_inns} | 90% CI [${r.boot_ci_low}, ${r.boot_ci_high}] | P(>0)=${r.boot_prob_pos}%`),
-          hoverinfo: 'text'
-        }], baseLayout({
-          margin: { l: 132, r: 16, t: 10, b: 36 },
-          xaxis: { title: 'Net Runs Above Expected / HP Innings', gridcolor: themeColors().grid },
-          shapes: [{ type: 'line', x0: 0, x1: 0, y0: -0.5, y1: 9.5, line: { color: '#F43F5E', dash: 'dash', width: 1.4 } }]
-        }), PLOT_CFG);
-      }
-      makeBoot('boot-bat-chart', D.batters, '#EC2B82');
-      makeBoot('boot-bowl-chart', D.bowlers, '#38BDF8');
+      // 4. Situation Drivers
+      const drv = D.meta.wp_model.hp_driver_share;
+      const items = Object.entries(drv).sort((a, b) => a[1] - b[1]);
+      Plotly.newPlot('chart-drivers', [{
+        type: 'bar', orientation: 'h',
+        y: items.map(x => x[0]), x: items.map(x => x[1]),
+        text: items.map(x => `${x[1]}%`), textposition: 'outside',
+        marker: { color: items.map(x => x[0].includes('Chase') ? c.accent : c.ink) }
+      }], pLayout({ margin: { l: 132, r: 38, t: 8, b: 34 }, xaxis: { title: 'Share of High-Pressure Balls (%)', range: [0, 28], gridcolor: c.grid } }), PLOT_CFG);
     }
 
-    function resetSimWeights() {
+    // --- FULL SEARCHABLE TABLE ---
+    function setTableRole(r) {
+      tableRole = r;
+      document.getElementById('tb-bat').className = r === 'bat' ? 'px-3.5 py-1 rounded-full bg-charcoal text-white dark:bg-white dark:text-charcoal font-medium cursor-pointer' : 'px-3.5 py-1 rounded-full text-charcoal dark:text-stone-300 font-medium cursor-pointer';
+      document.getElementById('tb-bowl').className = r === 'bowl' ? 'px-3.5 py-1 rounded-full bg-charcoal text-white dark:bg-white dark:text-charcoal font-medium cursor-pointer' : 'px-3.5 py-1 rounded-full text-charcoal dark:text-stone-300 font-medium cursor-pointer';
+      renderDatabaseTable();
+    }
+
+    function renderDatabaseTable() {
+      const q = (document.getElementById('tableSearch').value || '').toLowerCase().trim();
+      const rows = (tableRole === 'bat' ? D.batters : D.bowlers).filter(r => !q || r.name.toLowerCase().includes(q) || (r.ipl_team||'').toLowerCase().includes(q));
+      const head = document.getElementById('db-head');
+      const body = document.getElementById('db-body');
+      if (tableRole === 'bat') {
+        head.innerHTML = '<tr><th class="py-2.5 pr-3">Rk</th><th class="py-2.5 pr-3">Batter</th><th class="py-2.5 pr-3">IPL Team</th><th class="py-2.5 pr-3 text-right">PRR</th><th class="py-2.5 pr-3 text-right">HP EB</th><th class="py-2.5 pr-3 text-right">Norm EB</th><th class="py-2.5 pr-3 text-right">Delta</th><th class="py-2.5 pr-3 text-right">HP SR (TSR)</th><th class="py-2.5 pr-3 text-right">Avg</th><th class="py-2.5 text-right">+Inns</th></tr>';
+        body.innerHTML = rows.map(r => `
+          <tr onclick="openPlayerDrawer('bat','${r.name.replace(/'/g,"\\'")}')" class="hover:bg-stoneBg dark:hover:bg-darkRest cursor-pointer transition">
+            <td class="py-2.5 pr-3 font-mono ${r.rank<=10?'text-rrAccent font-semibold':'text-slateMuted'}">#${r.rank}</td>
+            <td class="py-2.5 pr-3 font-medium">${r.name}</td>
+            <td class="py-2.5 pr-3 text-slateMuted dark:text-stone-400">${r.ipl_team}</td>
+            <td class="py-2.5 pr-3 text-right font-mono font-semibold">${r.prr.toFixed(1)}</td>
+            <td class="py-2.5 pr-3 text-right font-mono">${r.hp_rate_eb>=0?'+':''}${r.hp_rate_eb.toFixed(1)}</td>
+            <td class="py-2.5 pr-3 text-right font-mono text-slateMuted">${r.norm_rate_eb>=0?'+':''}${r.norm_rate_eb.toFixed(1)}</td>
+            <td class="py-2.5 pr-3 text-right font-mono ${r.pressure_delta>=0?'text-emerald-700 dark:text-emerald-400':'text-amber-700 dark:text-amber-400'}">${r.pressure_delta>=0?'+':''}${r.pressure_delta.toFixed(1)}</td>
+            <td class="py-2.5 pr-3 text-right font-mono">${r.hp_sr} (${r.hp_tsr>=0?'+':''}${r.hp_tsr})</td>
+            <td class="py-2.5 pr-3 text-right font-mono">${r.hp_avg}</td>
+            <td class="py-2.5 text-right font-mono">${Math.round(r.pos_inns_pct)}%</td>
+          </tr>`).join('');
+      } else {
+        head.innerHTML = '<tr><th class="py-2.5 pr-3">Rk</th><th class="py-2.5 pr-3">Bowler</th><th class="py-2.5 pr-3">Type</th><th class="py-2.5 pr-3">IPL Team</th><th class="py-2.5 pr-3 text-right">PRR</th><th class="py-2.5 pr-3 text-right">HP EB</th><th class="py-2.5 pr-3 text-right">Delta</th><th class="py-2.5 pr-3 text-right">Econ (Saved)</th><th class="py-2.5 pr-3 text-right">Wkts</th><th class="py-2.5 text-right">+Sp%</th></tr>';
+        body.innerHTML = rows.map(r => `
+          <tr onclick="openPlayerDrawer('bowl','${r.name.replace(/'/g,"\\'")}')" class="hover:bg-stoneBg dark:hover:bg-darkRest cursor-pointer transition">
+            <td class="py-2.5 pr-3 font-mono ${r.rank<=10?'text-rrAccent font-semibold':'text-slateMuted'}">#${r.rank}</td>
+            <td class="py-2.5 pr-3 font-medium">${r.name}</td>
+            <td class="py-2.5 pr-3 text-slateMuted dark:text-stone-400">${r.pace_spin}</td>
+            <td class="py-2.5 pr-3 text-slateMuted dark:text-stone-400">${r.ipl_team}</td>
+            <td class="py-2.5 pr-3 text-right font-mono font-semibold">${r.prr.toFixed(1)}</td>
+            <td class="py-2.5 pr-3 text-right font-mono">${r.hp_rate_eb>=0?'+':''}${r.hp_rate_eb.toFixed(1)}</td>
+            <td class="py-2.5 pr-3 text-right font-mono ${r.pressure_delta>=0?'text-emerald-700 dark:text-emerald-400':'text-amber-700 dark:text-amber-400'}">${r.pressure_delta>=0?'+':''}${r.pressure_delta.toFixed(1)}</td>
+            <td class="py-2.5 pr-3 text-right font-mono">${r.hp_econ.toFixed(2)} (+${r.hp_econ_saved.toFixed(2)})</td>
+            <td class="py-2.5 pr-3 text-right font-mono">${r.hp_wkts}</td>
+            <td class="py-2.5 text-right font-mono">${Math.round(r.pos_inns_pct)}%</td>
+          </tr>`).join('');
+      }
+    }
+
+    // --- RR 2027 AUCTION PLANNER ---
+    const RR_TARGETS = [
+      { id: 'shashank', name: 'Shashank Singh', role: 'No. 5–7 Domestic Finisher', cat: 'Finisher', prr: 71.9, cost: 6.5, os: false, stat: 'HP Avg 56.8 · 168.0 SR · 75% +Inns', tag: 'Top 10 #4' },
+      { id: 'ashutosh', name: 'Ashutosh Sharma', role: 'No. 6–7 Domestic Finisher', cat: 'Finisher', prr: 67.5, cost: 4.5, os: false, stat: 'HP SR 177.1 · +16.4 Delta', tag: 'Top 10 #8' },
+      { id: 'zampa', name: 'Adam Zampa', role: 'Middle-Overs Wrist Spin', cat: 'Spin', prr: 76.8, cost: 5.0, os: true, stat: '24W @ 12.1 SR · +23.6 Delta', tag: 'Top 10 #2' },
+      { id: 'mujeeb', name: 'Mujeeb Ur Rahman', role: 'PP & Mid Mystery Spin', cat: 'Spin', prr: 75.5, cost: 4.0, os: true, stat: '5.67 Econ (+2.02 saved/over)', tag: 'Top 10 #3' },
+      { id: 'hazlewood', name: 'Josh Hazlewood', role: 'Hard-Length Pace Enforcer', cat: 'Pace', prr: 75.3, cost: 12.0, os: true, stat: '33W @ 7.53 Econ (+1.39 saved)', tag: 'Top 10 #4' },
+      { id: 'mohsin', name: 'Mohsin Khan', role: 'Indian Left-Arm Death Pace', cat: 'Pace', prr: 67.8, cost: 4.5, os: false, stat: '7.69 HP Econ (+1.47 saved)', tag: 'Backup #15' },
+      { id: 'david', name: 'Tim David', role: 'Overseas Death Destroyer', cat: 'Finisher', prr: 79.6, cost: 11.0, os: true, stat: '187.1 HP SR (+40.4 TSR)', tag: 'Top 10 #1' },
+      { id: 'muqeem', name: 'Sufiyan Muqeem', role: 'Watchlist Wrist Spin Gem', cat: 'Spin', prr: 83.5, cost: 1.5, os: true, stat: '4.46 HP Econ · 12W (136b)', tag: 'Watchlist' }
+    ];
+    let rrCart = new Set(['shashank', 'zampa', 'hazlewood', 'mohsin']);
+
+    function toggleRR(id) {
+      if (rrCart.has(id)) rrCart.delete(id); else rrCart.add(id);
+      renderRRPlanner();
+    }
+    function resetRRCart() {
+      rrCart = new Set(['shashank', 'zampa', 'hazlewood', 'mohsin']);
+      renderRRPlanner();
+    }
+
+    function renderRRPlanner() {
+      document.getElementById('rrTargetCards').innerHTML = RR_TARGETS.map(t => {
+        const on = rrCart.has(t.id);
+        return `
+          <div onclick="toggleRR('${t.id}')" class="rounded-card p-5 border transition-all cursor-pointer ${on ? 'bg-charcoal text-white dark:bg-white dark:text-charcoal border-transparent shadow-sm' : 'bg-white dark:bg-darkCard border-black/[0.06] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/25'}">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="font-mono text-[11px] uppercase ${on ? 'text-white/60 dark:text-charcoal/60' : 'text-slateMuted dark:text-stone-400'}">${t.tag} · ${t.os ? 'Overseas' : 'Indian'}</span>
+                <h4 class="text-base font-semibold mt-0.5">${t.name}</h4>
+                <p class="text-xs ${on ? 'text-white/75 dark:text-charcoal/75' : 'text-slateMuted dark:text-stone-400'}">${t.role}</p>
+              </div>
+              <div class="text-right font-mono">
+                <div class="text-sm font-semibold">PRR ${t.prr}</div>
+                <div class="text-xs ${on ? 'text-white/70 dark:text-charcoal/70' : 'text-slateMuted'}">~₹${t.cost} Cr</div>
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-t ${on ? 'border-white/15 dark:border-charcoal/15' : 'border-black/[0.06] dark:border-white/[0.08]'} flex items-center justify-between text-xs">
+              <span class="font-mono text-[11px]">${t.stat}</span>
+              <span class="font-medium">${on ? 'Selected ✓' : '+ Add'}</span>
+            </div>
+          </div>`;
+      }).join('');
+
+      const picked = RR_TARGETS.filter(t => rrCart.has(t.id));
+      const spend = picked.reduce((s,t) => s + t.cost, 0);
+      const rem = 42.5 - spend;
+      const osCnt = picked.filter(t => t.os).length;
+      const avg = picked.length ? picked.reduce((s,t) => s + t.prr, 0) / picked.length : 0;
+
+      document.getElementById('rr-rem-purse').textContent = `₹${rem.toFixed(1)} Cr`;
+      document.getElementById('rr-avg-prr').textContent = avg.toFixed(1);
+      document.getElementById('rr-os-cnt').innerHTML = `${osCnt}<span class="text-slateMuted">/4</span>`;
+
+      const gaps = [
+        ['No. 5–7 Pressure Finisher', picked.some(t => t.cat === 'Finisher')],
+        ['Jaipur Middle-Overs Spin', picked.some(t => t.cat === 'Spin')],
+        ['Pace Support for Archer', picked.some(t => t.cat === 'Pace')],
+        ['Indian Domestic Core', picked.some(t => !t.os)]
+      ];
+      document.getElementById('rr-gap-list').innerHTML = gaps.map(([lbl, ok]) => `
+        <div class="flex items-center justify-between py-2 border-b border-black/[0.05] dark:border-white/[0.06]">
+          <span class="${ok ? 'font-medium' : 'text-slateMuted'}">${lbl}</span>
+          <span class="font-mono text-xs ${ok ? 'text-emerald-700 dark:text-emerald-400 font-semibold' : 'text-slateMuted'}">${ok ? 'Covered ✓' : 'Open'}</span>
+        </div>`).join('');
+    }
+
+    // --- SLIDE-OVER PLAYER DRAWER ---
+    function openPlayerDrawer(kind, name) {
+      const pool = kind === 'bat' ? D.batters : D.bowlers;
+      const r = pool.find(x => x.name === name);
+      if (!r) return;
+      document.getElementById('dr-tag').textContent = `RANK #${r.rank} OF ${pool.length} · ${kind === 'bat' ? 'BATTER' : 'BOWLER'}`;
+      document.getElementById('dr-name').textContent = r.name;
+
+      const isBat = kind === 'bat';
+      const pm = r.phase_mix || {};
+      const rows = isBat ? [
+        ['Pressure Reliability Rating', `${r.prr.toFixed(1)} / 100`],
+        ['High-Pressure Strike Rate', `${r.hp_sr} (TSR ${r.hp_tsr>=0?'+':''}${r.hp_tsr})`],
+        ['High-Pressure Average', `${r.hp_avg} (Normal: ${r.norm_avg})`],
+        ['Positive HP Innings', `${r.pos_inns_pct}% across ${r.hp_inns} innings`],
+        ['Baseline → Pressure EB', `${r.norm_rate_eb>=0?'+':''}${r.norm_rate_eb} → ${r.hp_rate_eb>=0?'+':''}${r.hp_rate_eb} (Δ ${r.pressure_delta>=0?'+':''}${r.pressure_delta})`],
+        ['Pace vs. Spin HP SR', `Pace ${r.sr_vs_pace} · Spin ${r.sr_vs_spin}`],
+        ['Phase Exposure', `PP ${pm.PP||0}% · Mid ${pm.MID||0}% · Death ${pm.DEATH||0}%`],
+        ['Format Split', `IPL ${r.ipl_share_pct}% · T20I ${r.t20i_share_pct}% (${r.hp_balls} balls)`]
+      ] : [
+        ['Pressure Reliability Rating', `${r.prr.toFixed(1)} / 100`],
+        ['High-Pressure Economy', `${r.hp_econ.toFixed(2)} (+${r.hp_econ_saved.toFixed(2)} saved/over)`],
+        ['High-Pressure Wickets', `${r.hp_wkts} wickets @ ${r.hp_sr} SR`],
+        ['Positive HP Spells', `${r.pos_inns_pct}% across ${r.hp_inns} spells`],
+        ['Baseline → Pressure EB', `${r.norm_rate_eb>=0?'+':''}${r.norm_rate_eb} → ${r.hp_rate_eb>=0?'+':''}${r.hp_rate_eb} (Δ ${r.pressure_delta>=0?'+':''}${r.pressure_delta})`],
+        ['Control Profile', `Dot ${r.hp_dot_pct}% · Boundary Conceded ${r.hp_bndry_pct}%`],
+        ['Phase Exposure', `PP ${pm.PP||0}% · Mid ${pm.MID||0}% · Death ${pm.DEATH||0}%`],
+        ['Format Split', `IPL ${r.ipl_share_pct}% · T20I ${r.t20i_share_pct}% (${r.hp_balls} balls)`]
+      ];
+      if (r.boot_prob_pos !== undefined) {
+        rows.push(['1,000x Bootstrap 90% CI', `[${r.boot_ci_low}, ${r.boot_ci_high}] · P(>0) = ${r.boot_prob_pos}%`]);
+      }
+
+      document.getElementById('dr-body').innerHTML = `
+        <div class="text-xs font-mono text-slateMuted dark:text-stone-400">${isBat ? `${r.bat_type} · Pos ${r.avg_bat_pos}` : `${r.bowl_type} (${r.pace_spin})`} · ${r.ipl_team} · ${r.country}</div>
+        <div id="dr-radar" class="w-full h-[230px] bg-white dark:bg-darkCard rounded-2xl border border-black/[0.05] dark:border-white/[0.06]"></div>
+        <div class="bg-white dark:bg-darkCard rounded-2xl p-4 border border-black/[0.05] dark:border-white/[0.06] divide-y divide-black/[0.05] dark:divide-white/[0.06] text-xs">
+          ${rows.map(([k, v]) => `<div class="py-2.5 flex items-center justify-between gap-3"><span class="text-slateMuted dark:text-stone-400">${k}</span><span class="font-mono font-medium text-right">${v}</span></div>`).join('')}
+        </div>
+      `;
+
+      document.getElementById('drawerBackdrop').classList.remove('hidden');
+      document.getElementById('playerDrawer').classList.remove('translate-x-full');
+
+      const c = pPalette();
+      const spec = isBat
+        ? [['HP Impact','hp_rate_eb',false],['True SR','hp_tsr',false],['Survival','hp_avg',false],['Consistency','pos_inns_pct',false],['Clutch Lift','resilience_score',false]]
+        : [['HP Impact','hp_rate_eb',false],['Econ Saved','hp_econ_saved',false],['Wicket SR','hp_sr',true],['Consistency','pos_inns_pct',false],['Clutch Lift','resilience_score',false]];
+      const vals = spec.map(([_, k, inv]) => {
+        const arr = pool.map(x => x[k]); const lo = Math.min(...arr), hi = Math.max(...arr);
+        let n = (r[k] - lo) / Math.max(1e-6, hi - lo); if (inv) n = 1 - n;
+        return Math.round(15 + 85 * Math.max(0, Math.min(1, n)));
+      });
+      const th = spec.map(s => s[0]);
+      setTimeout(() => {
+        Plotly.newPlot('dr-radar', [{
+          type: 'scatterpolar', r: [...vals, vals[0]], theta: [...th, th[0]],
+          fill: 'toself', fillcolor: isDark() ? 'rgba(224,79,142,0.22)' : 'rgba(200,30,104,0.16)',
+          line: { color: c.accent, width: 2 }
+        }], {
+          paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+          font: { color: c.ink, size: 10 }, margin: { l: 36, r: 36, t: 22, b: 22 },
+          polar: { bgcolor: 'rgba(0,0,0,0)', radialaxis: { visible: false, range: [0, 100] }, angularaxis: { gridcolor: c.grid } }
+        }, PLOT_CFG);
+      }, 60);
+    }
+
+    function closeDrawer() {
+      document.getElementById('drawerBackdrop').classList.add('hidden');
+      document.getElementById('playerDrawer').classList.add('translate-x-full');
+    }
+
+    // --- WHAT-IF SIMULATOR MODAL ---
+    function openSimModal() {
+      const m = document.getElementById('simModalBackdrop');
+      m.classList.remove('hidden'); m.classList.add('flex');
+      runSim();
+    }
+    function closeSimModal() {
+      const m = document.getElementById('simModalBackdrop');
+      m.classList.add('hidden'); m.classList.remove('flex');
+    }
+    function resetSim() {
       document.getElementById('sl-hp').value = 60;
       document.getElementById('sl-dl').value = 20;
       document.getElementById('sl-cs').value = 20;
-      runSimulator();
+      runSim();
     }
-
-    function runSimulator() {
+    function runSim() {
       const a = +document.getElementById('sl-hp').value, b = +document.getElementById('sl-dl').value, c = +document.getElementById('sl-cs').value;
       const tot = Math.max(1, a + b + c);
       const wHp = a/tot, wDl = b/tot, wCs = c/tot;
-      document.getElementById('lbl-w-hp').textContent = `${Math.round(wHp*100)}%`;
-      document.getElementById('lbl-w-dl').textContent = `${Math.round(wDl*100)}%`;
-      document.getElementById('lbl-w-cs').textContent = `${Math.round(wCs*100)}%`;
+      document.getElementById('sw-hp').textContent = `${Math.round(wHp*100)}%`;
+      document.getElementById('sw-dl').textContent = `${Math.round(wDl*100)}%`;
+      document.getElementById('sw-cs').textContent = `${Math.round(wCs*100)}%`;
 
-      const rescore = list => list.map(r => ({ ...r, sim: Math.max(0, Math.min(99.9, 50 + 15*(wHp*r.z_hp + wDl*r.z_delta + wCs*r.z_cons))) }))
-        .sort((x,y) => y.sim - x.sim).slice(0, 10);
+      const rescore = list => list.map(r => ({ ...r, s: Math.max(0, Math.min(99.9, 50 + 15*(wHp*r.z_hp + wDl*r.z_delta + wCs*r.z_cons))) }))
+        .sort((x,y) => y.s - x.s).slice(0, 10);
       const sBat = rescore(D.batters), sBowl = rescore(D.bowlers);
-      const bOv = sBat.filter(r => baseBat10Ids.has(r.player_id)).length;
-      const wOv = sBowl.filter(r => baseBowl10Ids.has(r.player_id)).length;
-      document.getElementById('sim-overlap-badge').textContent = `Overlap: Bat ${bOv}/10 • Bowl ${wOv}/10`;
+      const bOv = sBat.filter(r => baseBatIds.has(r.player_id)).length;
+      const wOv = sBowl.filter(r => baseBowlIds.has(r.player_id)).length;
+      document.getElementById('sim-ov-pill').textContent = `Overlap vs Official: Bat ${bOv}/10 · Bowl ${wOv}/10`;
 
-      const fmt = (arr, set, cls) => arr.map((r, i) => `
-        <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-black/30 border border-white/10">
-          <div class="truncate"><span class="font-mono font-bold ${cls} mr-1.5">#${i+1}</span><span class="font-semibold">${r.name}</span>${!set.has(r.player_id)?' <span class="text-[9px] px-1 rounded bg-amber-500/25 text-amber-300">NEW</span>':''}</div>
-          <span class="font-mono font-bold text-slate-300 ml-2">${r.sim.toFixed(1)}</span>
+      const fmt = (arr, set) => arr.map((r, i) => `
+        <div class="flex items-center justify-between py-1 border-b border-black/[0.04] dark:border-white/[0.05]">
+          <span class="truncate"><span class="font-mono text-slateMuted mr-1.5">#${i+1}</span><span class="font-medium">${r.name}</span>${!set.has(r.player_id)?' <span class="font-mono text-[10px] text-rrAccent">NEW</span>':''}</span>
+          <span class="font-mono font-semibold ml-2">${r.s.toFixed(1)}</span>
         </div>`).join('');
-      document.getElementById('sim-bat-list').innerHTML = fmt(sBat, baseBat10Ids, 'text-pink-400');
-      document.getElementById('sim-bowl-list').innerHTML = fmt(sBowl, baseBowl10Ids, 'text-sky-400');
+      document.getElementById('sim-bat').innerHTML = fmt(sBat, baseBatIds);
+      document.getElementById('sim-bowl').innerHTML = fmt(sBowl, baseBowlIds);
     }
 
-    // --- SECTION 6: LIVE PRESSURE CALCULATOR ---
+    // --- LIVE PRESSURE CALCULATOR ---
     function calcLivePI() {
       const inn = +document.getElementById('pc-inn').value;
       const stakes = +document.getElementById('pc-stage').value;
       const ov = +document.getElementById('pc-ov').value;
       const wk = +document.getElementById('pc-wk').value;
       const rn = +document.getElementById('pc-rn').value;
-      document.getElementById('pc-inn-v').textContent = inn === 2 ? '2nd (Chase)' : (inn === 1 ? '1st (Setting)' : 'Super Over');
-      document.getElementById('pc-st-v').textContent = stakes === 0 ? 'League' : (stakes === 15 ? 'Final (+15)' : (stakes === 12 ? 'Knockout (+12)' : 'Super 4 (+8)'));
       document.getElementById('pc-ov-v').textContent = ov;
       document.getElementById('pc-wk-v').textContent = wk;
       document.getElementById('pc-rn-lbl').textContent = inn === 2 ? 'Runs Needed to Win' : 'Current Team Score';
@@ -1604,71 +1195,24 @@
       document.getElementById('pc-alive').textContent = alive.toFixed(2);
       document.getElementById('pc-rrr').textContent = rrrTxt;
       const pill = document.getElementById('pc-tier-pill');
-      pill.textContent = pi >= 60 ? 'HIGH PRESSURE (PI ≥ 60)' : (pi >= 40 ? 'MEDIUM PRESSURE (40–60)' : 'LOW PRESSURE / DEAD GAME');
-      pill.className = `inline-block px-3.5 py-1 rounded-full text-xs font-bold ${pi>=60?'badge-high':(pi>=40?'badge-med':'bg-slate-800 text-slate-300')}`;
-    }
-
-    // --- PLAYER MODAL ---
-    function openPlayerModal(kind, name) {
-      const pool = kind === 'bat' ? D.batters : D.bowlers;
-      const r = pool.find(x => x.name === name);
-      if (!r) return;
-      document.getElementById('m-eyebrow').textContent = `${kind==='bat'?'BATTER':'BOWLER'} SCOUTING DOSSIER • RANK #${r.rank} OF ${pool.length}`;
-      document.getElementById('m-name').textContent = r.name;
-      document.getElementById('m-sub').textContent = kind === 'bat' ? `${r.bat_type} • Pos ${r.avg_bat_pos} • ${r.ipl_team} • ${r.country}` : `${r.bowl_type} (${r.pace_spin}) • ${r.ipl_team} • ${r.country}`;
-      const kpis = kind === 'bat'
-        ? [['PRR', r.prr.toFixed(1), 'text-pink-400'], ['HP SR (TSR)', `${r.hp_sr} (${r.hp_tsr>=0?'+':''}${r.hp_tsr})`, 'text-white'], ['Avg / +Inns', `${r.hp_avg} / ${Math.round(r.pos_inns_pct)}%`, 'text-teal-400'], ['Delta', `${r.pressure_delta>=0?'+':''}${r.pressure_delta.toFixed(1)}`, 'text-sky-300']]
-        : [['PRR', r.prr.toFixed(1), 'text-sky-400'], ['HP Econ', `${r.hp_econ.toFixed(2)} (+${r.hp_econ_saved.toFixed(2)})`, 'text-white'], ['Wkts (SR)', `${r.hp_wkts} (${r.hp_sr})`, 'text-teal-400'], ['Delta', `${r.pressure_delta>=0?'+':''}${r.pressure_delta.toFixed(1)}`, 'text-pink-300']];
-      document.getElementById('m-kpis').innerHTML = kpis.map(([l,v,c]) => `<div class="bg-black/35 border border-white/10 rounded-xl p-2.5 text-center"><div class="text-[10px] font-mono text-slate-400 uppercase">${l}</div><div class="text-sm font-black font-mono ${c} mt-0.5">${v}</div></div>`).join('');
-
-      const spec = kind === 'bat'
-        ? [['HP Impact','hp_rate_eb',false],['True SR','hp_tsr',false],['Survival','hp_avg',false],['Consistency','pos_inns_pct',false],['Clutch Lift','resilience_score',false]]
-        : [['HP Impact','hp_rate_eb',false],['Econ Saved','hp_econ_saved',false],['Wicket SR','hp_sr',true],['Consistency','pos_inns_pct',false],['Clutch Lift','resilience_score',false]];
-      const vals = spec.map(([_, k, inv]) => {
-        const arr = pool.map(x => x[k]); const lo = Math.min(...arr), hi = Math.max(...arr);
-        let n = (r[k] - lo) / Math.max(1e-6, hi - lo); if (inv) n = 1 - n;
-        return Math.round(15 + 85 * Math.max(0, Math.min(1, n)));
-      });
-      const th = spec.map(s => s[0]);
-      Plotly.newPlot('m-radar', [{
-        type: 'scatterpolar', r: [...vals, vals[0]], theta: [...th, th[0]],
-        fill: 'toself', fillcolor: kind==='bat'?'rgba(236,43,130,0.28)':'rgba(79,125,243,0.28)',
-        line: { color: kind==='bat'?'#EC2B82':'#4F7DF3', width: 2.2 }
-      }], {
-        paper_bgcolor: 'rgba(0,0,0,0)', font: { color: '#CBD5E1', size: 10 }, margin: { l: 35, r: 35, t: 20, b: 20 },
-        polar: { bgcolor: 'rgba(0,0,0,0)', radialaxis: { visible: false, range: [0, 100] }, angularaxis: { gridcolor: 'rgba(255,255,255,0.12)' } }
-      }, PLOT_CFG);
-
-      const pm = r.phase_mix || {};
-      document.getElementById('m-details').innerHTML = `
-        <div><strong>Sample:</strong> <span class="font-mono">${r.hp_balls}</span> HP balls across <span class="font-mono">${r.hp_inns}</span> innings (IPL ${r.ipl_share_pct}% | T20I ${r.t20i_share_pct}%)</div>
-        <div><strong>Phase Mix:</strong> PP ${pm.PP||0}% • Middle ${pm.MID||0}% • Death ${pm.DEATH||0}%</div>
-        <div><strong>Normal → Pressure EB:</strong> <span class="font-mono">${r.norm_rate_eb>=0?'+':''}${r.norm_rate_eb} → ${r.hp_rate_eb>=0?'+':''}${r.hp_rate_eb}</span></div>
-        ${r.boot_prob_pos!==undefined?`<div><strong>Bootstrap 90% CI:</strong> <span class="font-mono text-emerald-400">[${r.boot_ci_low}, ${r.boot_ci_high}]</span> (P&gt;0: ${r.boot_prob_pos}%)</div>`:''}
-      `;
-      const m = document.getElementById('player-modal'); m.classList.remove('hidden'); m.classList.add('flex');
-    }
-    function closeModal() { const m = document.getElementById('player-modal'); m.classList.add('hidden'); m.classList.remove('flex'); }
-
-    function renderAllCharts() {
-      renderOvRadar();
-      renderOvScatter();
-      renderOvDonut();
-      renderPurseSection();
-      renderScoutingCharts();
-      renderXI();
-      renderModelCharts();
+      if (pi >= 60) {
+        pill.textContent = 'HIGH PRESSURE (PI ≥ 60)';
+        pill.className = 'inline-block px-4 py-1.5 rounded-full text-xs font-mono font-medium bg-rrAccent text-white';
+      } else if (pi >= 40) {
+        pill.textContent = 'MEDIUM PRESSURE (40–60)';
+        pill.className = 'inline-block px-4 py-1.5 rounded-full text-xs font-mono font-medium bg-charcoal text-white dark:bg-white dark:text-charcoal';
+      } else {
+        pill.textContent = 'LOW PRESSURE / DEAD GAME';
+        pill.className = 'inline-block px-4 py-1.5 rounded-full text-xs font-mono font-medium bg-stonePill dark:bg-darkCard text-slateMuted';
+      }
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      lucide.createIcons();
-      bindSpotlights();
-      initScrollSystem();
-      renderPriorityMatrix();
-      renderExplorerTable();
-      runSimulator();
+      renderTrackCards();
+      renderCharts();
+      renderDatabaseTable();
+      renderRRPlanner();
       calcLivePI();
-      renderAllCharts();
     });
   </script>
 </body>
