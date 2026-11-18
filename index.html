@@ -711,10 +711,13 @@
     id="playerDrawer"
     class="fixed top-0 right-0 z-50 h-full w-full max-w-md bg-stoneBg dark:bg-darkBg shadow-2xl border-l border-black/10 dark:border-white/10 transform translate-x-full transition-transform duration-300 flex flex-col"
   >
-    <div class="p-6 border-b border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between">
-      <div>
-        <span id="dr-tag" class="text-xs font-mono uppercase tracking-wider text-slateMuted dark:text-stone-400">RANK #1 · BATTER</span>
-        <h3 id="dr-name" class="text-2xl font-semibold tracking-tight mt-0.5">Tim David</h3>
+    <div class="p-6 border-b border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3.5 min-w-0">
+        <div id="dr-avatar" class="shrink-0"></div>
+        <div class="min-w-0">
+          <span id="dr-tag" class="text-xs font-mono uppercase tracking-wider text-slateMuted dark:text-stone-400">RANK #1 · BATTER</span>
+          <h3 id="dr-name" class="text-2xl font-semibold tracking-tight mt-0.5 truncate">Tim David</h3>
+        </div>
       </div>
       <button onclick="closeDrawer()" aria-label="Close drawer" class="w-9 h-9 rounded-full bg-stonePill dark:bg-darkCard flex items-center justify-center hover:bg-black/10 transition cursor-pointer">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -788,7 +791,30 @@
   <!-- ==================== APPLICATION LOGIC ==================== -->
   <script>
     const D = window.RR_DATA;
+    const AVATARS = D.avatars || {};
     let activeTrack = 'bat10';
+
+    function playerInitials(name) {
+      const parts = (name || 'P').trim().split(/\s+/);
+      return (parts.length >= 2 ? parts[0][0] + parts[parts.length - 1][0] : name.slice(0, 2)).toUpperCase();
+    }
+
+    function renderAvatar(name, sizeClass = 'w-10 h-10', accent = false) {
+      const url = AVATARS[name];
+      const init = playerInitials(name);
+      const fallbackCls = accent
+        ? 'bg-charcoal text-white dark:bg-white dark:text-charcoal'
+        : 'bg-stonePill dark:bg-darkRest text-charcoal dark:text-stone-200';
+      if (url) {
+        return `<span class="relative inline-flex ${sizeClass} rounded-full overflow-hidden shrink-0 border border-black/10 dark:border-white/15 bg-stonePill dark:bg-darkRest">
+          <img src="${url}" alt="${name}" loading="lazy" referrerpolicy="no-referrer"
+               class="w-full h-full object-cover object-top"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+          <span style="display:none" class="w-full h-full items-center justify-center font-mono text-[11px] font-semibold ${fallbackCls}">${init}</span>
+        </span>`;
+      }
+      return `<span class="inline-flex ${sizeClass} rounded-full shrink-0 items-center justify-center font-mono text-[11px] font-semibold border border-black/[0.08] dark:border-white/10 ${fallbackCls}">${init}</span>`;
+    }
     let chartRole = 'bat';
     let tableRole = 'bat';
     const baseBatIds = new Set(D.batters.slice(0, 10).map(r => r.player_id));
@@ -888,9 +914,12 @@
           onclick="selectSearchResult('${m.kind}', '${m.r.name.replace(/'/g,"\\'")}')"
           class="w-full text-left px-4 py-3 hover:bg-stoneBg dark:hover:bg-darkRest transition flex items-center justify-between gap-3 cursor-pointer"
         >
-          <div class="min-w-0">
-            <div class="text-sm font-semibold truncate">${m.r.name}</div>
-            <div class="text-[11px] text-slateMuted dark:text-stone-400 truncate mt-0.5">${m.sub}</div>
+          <div class="flex items-center gap-3 min-w-0">
+            ${renderAvatar(m.r.name, 'w-9 h-9', m.r.rank <= 3)}
+            <div class="min-w-0">
+              <div class="text-sm font-semibold truncate">${m.r.name}</div>
+              <div class="text-[11px] text-slateMuted dark:text-stone-400 truncate mt-0.5">${m.sub}</div>
+            </div>
           </div>
           <span class="shrink-0 font-mono text-xs font-semibold px-2.5 py-1 rounded-full ${m.r.rank<=10 ? 'bg-rrAccent text-white' : 'bg-stonePill dark:bg-darkRest text-charcoal dark:text-stone-200'}">
             PRR ${m.r.prr.toFixed(1)}
@@ -996,9 +1025,12 @@
                 <span class="font-mono text-xs font-medium px-2.5 py-1 rounded-full ${r.rank<=3 && !isGem ? 'bg-charcoal text-white dark:bg-white dark:text-charcoal' : 'bg-stonePill dark:bg-darkRest text-slateMuted dark:text-stone-300'}">${rankStr}</span>
                 <span class="font-mono text-sm font-semibold ${r.rank<=3 && !isGem ? 'text-rrAccent' : 'text-charcoal dark:text-white'}">PRR ${r.prr.toFixed(1)}</span>
               </div>
-              <div>
-                <h3 class="text-lg font-semibold tracking-tight leading-snug">${r.name}</h3>
-                <p class="text-xs text-slateMuted dark:text-stone-400 mt-0.5">${note}</p>
+              <div class="flex items-center gap-3">
+                ${renderAvatar(r.name, 'w-11 h-11', r.rank <= 3 && !isGem)}
+                <div class="min-w-0">
+                  <h3 class="text-base font-semibold tracking-tight leading-snug truncate">${r.name}</h3>
+                  <p class="text-xs text-slateMuted dark:text-stone-400 mt-0.5 truncate">${note}</p>
+                </div>
               </div>
             </div>
 
@@ -1126,7 +1158,7 @@
         body.innerHTML = rows.map(r => `
           <tr onclick="openPlayerDrawer('bat','${r.name.replace(/'/g,"\\'")}')" class="hover:bg-stoneBg dark:hover:bg-darkRest cursor-pointer transition">
             <td class="py-2.5 pr-3 font-mono ${r.rank<=10?'text-rrAccent font-semibold':'text-slateMuted'}">#${r.rank}</td>
-            <td class="py-2.5 pr-3 font-medium">${r.name}</td>
+            <td class="py-2.5 pr-3 font-medium"><div class="flex items-center gap-2.5">${renderAvatar(r.name, 'w-7 h-7', r.rank<=3)}<span>${r.name}</span></div></td>
             <td class="py-2.5 pr-3 text-slateMuted dark:text-stone-400">${r.ipl_team}</td>
             <td class="py-2.5 pr-3 text-right font-mono font-semibold">${r.prr.toFixed(1)}</td>
             <td class="py-2.5 pr-3 text-right font-mono">${r.hp_rate_eb>=0?'+':''}${r.hp_rate_eb.toFixed(1)}</td>
@@ -1141,7 +1173,7 @@
         body.innerHTML = rows.map(r => `
           <tr onclick="openPlayerDrawer('bowl','${r.name.replace(/'/g,"\\'")}')" class="hover:bg-stoneBg dark:hover:bg-darkRest cursor-pointer transition">
             <td class="py-2.5 pr-3 font-mono ${r.rank<=10?'text-rrAccent font-semibold':'text-slateMuted'}">#${r.rank}</td>
-            <td class="py-2.5 pr-3 font-medium">${r.name}</td>
+            <td class="py-2.5 pr-3 font-medium"><div class="flex items-center gap-2.5">${renderAvatar(r.name, 'w-7 h-7', r.rank<=3)}<span>${r.name}</span></div></td>
             <td class="py-2.5 pr-3 text-slateMuted dark:text-stone-400">${r.pace_spin}</td>
             <td class="py-2.5 pr-3 text-slateMuted dark:text-stone-400">${r.ipl_team}</td>
             <td class="py-2.5 pr-3 text-right font-mono font-semibold">${r.prr.toFixed(1)}</td>
@@ -1182,10 +1214,13 @@
         return `
           <div onclick="toggleRR('${t.id}')" class="rounded-card p-5 border transition-all cursor-pointer ${on ? 'bg-charcoal text-white dark:bg-white dark:text-charcoal border-transparent shadow-sm' : 'bg-white dark:bg-darkCard border-black/[0.06] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/25'}">
             <div class="flex items-start justify-between gap-2">
-              <div>
-                <span class="font-mono text-[11px] uppercase ${on ? 'text-white/60 dark:text-charcoal/60' : 'text-slateMuted dark:text-stone-400'}">${t.tag} · ${t.os ? 'Overseas' : 'Indian'}</span>
-                <h4 class="text-base font-semibold mt-0.5">${t.name}</h4>
-                <p class="text-xs ${on ? 'text-white/75 dark:text-charcoal/75' : 'text-slateMuted dark:text-stone-400'}">${t.role}</p>
+              <div class="flex items-center gap-3 min-w-0">
+                ${renderAvatar(t.name, 'w-10 h-10', on)}
+                <div class="min-w-0">
+                  <span class="font-mono text-[11px] uppercase ${on ? 'text-white/60 dark:text-charcoal/60' : 'text-slateMuted dark:text-stone-400'}">${t.tag} · ${t.os ? 'Overseas' : 'Indian'}</span>
+                  <h4 class="text-base font-semibold mt-0.5 truncate">${t.name}</h4>
+                  <p class="text-xs ${on ? 'text-white/75 dark:text-charcoal/75' : 'text-slateMuted dark:text-stone-400'} truncate">${t.role}</p>
+                </div>
               </div>
               <div class="text-right font-mono">
                 <div class="text-sm font-semibold">PRR ${t.prr}</div>
@@ -1229,6 +1264,7 @@
       if (!r) return;
       document.getElementById('dr-tag').textContent = `RANK #${r.rank} OF ${pool.length} · ${kind === 'bat' ? 'BATTER' : 'BOWLER'}`;
       document.getElementById('dr-name').textContent = r.name;
+      document.getElementById('dr-avatar').innerHTML = renderAvatar(r.name, 'w-12 h-12', r.rank <= 3);
 
       const isBat = kind === 'bat';
       const pm = r.phase_mix || {};
@@ -1414,9 +1450,7 @@
       const isHighlight = item.tag === 'CLUTCH OUTLIER' || item.tag === 'SPIN STRANGLER' || item.tag === 'UNCAPPED GEM';
       return `
         <div ${clickAttr} class="anim-list-item bg-white dark:bg-darkCard rounded-[18px] p-4 border border-black/[0.06] dark:border-white/[0.08] shadow-[0_2px_10px_rgba(0,0,0,0.03)] hover:border-black/20 dark:hover:border-white/25 cursor-pointer flex items-start gap-3.5">
-          <div class="w-10 h-10 rounded-full shrink-0 flex items-center justify-center font-mono text-[11px] font-semibold ${isHighlight ? 'bg-charcoal text-white dark:bg-white dark:text-charcoal' : 'bg-stonePill dark:bg-darkRest text-charcoal dark:text-stone-200'}">
-            ${item.time.replace(' ','').slice(0,5)}
-          </div>
+          ${renderAvatar(item.player, 'w-11 h-11', isHighlight)}
           <div class="min-w-0 flex-1">
             <div class="flex items-center justify-between gap-2">
               <div class="flex items-center gap-2 min-w-0">
