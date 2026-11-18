@@ -76,16 +76,19 @@
 
       <!-- Right: Search Pill + Primary Black Pill CTA + Mobile Menu -->
       <div class="flex items-center gap-2 sm:gap-2.5">
-        <div class="hidden sm:flex items-center bg-stonePill dark:bg-darkCard rounded-full pl-4 pr-1.5 py-1.5 w-48 lg:w-64 focus-within:ring-2 focus-within:ring-charcoal/20 dark:focus-within:ring-white/20 transition">
+        <div id="searchWrap" class="relative hidden sm:flex items-center bg-stonePill dark:bg-darkCard rounded-full pl-4 pr-1.5 py-1.5 w-52 lg:w-72 focus-within:ring-2 focus-within:ring-charcoal/20 dark:focus-within:ring-white/20 transition">
           <input
             id="globalSearch"
             type="text"
-            placeholder="Find a player or team..."
+            autocomplete="off"
+            placeholder="Find any player or team..."
             class="bg-transparent text-xs sm:text-sm w-full focus:outline-none text-charcoal dark:text-white placeholder:text-slateMuted dark:placeholder:text-stone-400"
             oninput="handleGlobalSearch(this.value)"
+            onfocus="handleGlobalSearch(this.value)"
+            onkeydown="handleSearchKey(event)"
           />
           <button
-            onclick="document.getElementById('database').scrollIntoView({behavior:'smooth'})"
+            onclick="submitGlobalSearch()"
             aria-label="Search players"
             class="w-7 h-7 rounded-full bg-charcoal dark:bg-white text-white dark:text-charcoal flex items-center justify-center shrink-0 hover:opacity-90 transition cursor-pointer"
           >
@@ -94,6 +97,10 @@
               <path d="m20 20-3.5-3.5" stroke-linecap="round" />
             </svg>
           </button>
+          <!-- Instant Autocomplete Results Popover -->
+          <div id="searchPopover" class="hidden absolute top-full right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-darkCard rounded-2xl shadow-xl border border-black/10 dark:border-white/10 overflow-hidden z-50">
+            <div id="searchResultsList" class="max-h-80 overflow-y-auto divide-y divide-black/[0.05] dark:divide-white/[0.06]"></div>
+          </div>
         </div>
 
         <!-- Primary Black Pill CTA -->
@@ -761,10 +768,118 @@
         .then(() => showToast("Exact Unstop Top-10 lists copied to clipboard"));
     }
 
-    function handleGlobalSearch(q) {
-      document.getElementById('tableSearch').value = q;
-      renderDatabaseTable();
+    let lastSearchMatches = [];
+
+    function findAllPlayerMatches(raw) {
+      const q = (raw || '').toLowerCase().trim();
+      if (!q) return [];
+      const batM = D.batters
+        .filter(r => r.name.toLowerCase().includes(q) || (r.ipl_team||'').toLowerCase().includes(q) || (r.country||'').toLowerCase().includes(q))
+        .map(r => ({ kind: 'bat', r, sub: `Batter #${r.rank} · ${r.ipl_team} · HP SR ${r.hp_sr}` }));
+      const bowlM = D.bowlers
+        .filter(r => r.name.toLowerCase().includes(q) || (r.ipl_team||'').toLowerCase().includes(q) || (r.country||'').toLowerCase().includes(q))
+        .map(r => ({ kind: 'bowl', r, sub: `Bowler #${r.rank} (${r.pace_spin}) · ${r.ipl_team} · Econ ${r.hp_econ.toFixed(2)}` }));
+      return [...batM, ...bowlM].sort((a, b) => b.r.prr - a.r.prr);
     }
+
+    function handleGlobalSearch(val) {
+      const q = (val || '').trim();
+      document.getElementById('tableSearch').value = val;
+
+      // Auto-switch database tab if the active tab has 0 hits and the other tab has hits
+      if (q) {
+        const ql = q.toLowerCase();
+        const batHits = D.batters.filter(r => r.name.toLowerCase().includes(ql) || (r.ipl_team||'').toLowerCase().includes(ql)).length;
+        const bowlHits = D.bowlers.filter(r => r.name.toLowerCase().includes(ql) || (r.ipl_team||'').toLowerCase().includes(ql)).length;
+        if (tableRole === 'bat' && batHits === 0 && bowlHits > 0) setTableRole('bowl');
+        else if (tableRole === 'bowl' && bowlHits === 0 && batHits > 0) setTableRole('bat');
+        else renderDatabaseTable();
+      } else {
+        renderDatabaseTable();
+      }
+
+      const pop = document.getElementById('searchPopover');
+      const listEl = document.getElementById('searchResultsList');
+      if (!pop || !listEl) return;
+
+      if (!q) {
+        pop.classList.add('hidden');
+        lastSearchMatches = [];
+        return;
+      }
+
+      lastSearchMatches = findAllPlayerMatches(q);
+      pop.classList.remove('hidden');
+
+      if (lastSearchMatches.length === 0) {
+        listEl.innerHTML = `<div class="p-4 text-xs text-slateMuted dark:text-stone-400 text-center">No eligible player found for "<strong>${q.replace(/</g,'&lt;')}</strong>" (181 audited players)</div>`;
+        return;
+      }
+
+      listEl.innerHTML = lastSearchMatches.slice(0, 8).map(m => `
+        <button
+          onclick="selectSearchResult('${m.kind}', '${m.r.name.replace(/'/g,"\\'")}')"
+          class="w-full text-left px-4 py-3 hover:bg-stoneBg dark:hover:bg-darkRest transition flex items-center justify-between gap-3 cursor-pointer"
+        >
+          <div class="min-w-0">
+            <div class="text-sm font-semibold truncate">${m.r.name}</div>
+            <div class="text-[11px] text-slateMuted dark:text-stone-400 truncate mt-0.5">${m.sub}</div>
+          </div>
+          <span class="shrink-0 font-mono text-xs font-semibold px-2.5 py-1 rounded-full ${m.r.rank<=10 ? 'bg-rrAccent text-white' : 'bg-stonePill dark:bg-darkRest text-charcoal dark:text-stone-200'}">
+            PRR ${m.r.prr.toFixed(1)}
+          </span>
+        </button>
+      `).join('') + (lastSearchMatches.length > 8 ? `
+        <button onclick="jumpToDatabaseSearch()" class="w-full py-2.5 text-center text-xs font-medium text-rrAccent hover:bg-stoneBg dark:hover:bg-darkRest cursor-pointer">
+          View all ${lastSearchMatches.length} matches in table ↓
+        </button>` : '');
+    }
+
+    function selectSearchResult(kind, name) {
+      const pop = document.getElementById('searchPopover');
+      if (pop) pop.classList.add('hidden');
+      openPlayerDrawer(kind, name);
+    }
+
+    function jumpToDatabaseSearch() {
+      const pop = document.getElementById('searchPopover');
+      if (pop) pop.classList.add('hidden');
+      document.getElementById('database').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function submitGlobalSearch() {
+      const q = (document.getElementById('globalSearch').value || '').trim();
+      if (!q) {
+        document.getElementById('database').scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+      const matches = findAllPlayerMatches(q);
+      if (matches.length === 1) {
+        selectSearchResult(matches[0].kind, matches[0].r.name);
+      } else if (matches.length > 1) {
+        selectSearchResult(matches[0].kind, matches[0].r.name);
+      } else {
+        showToast(`No eligible player matched "${q}"`);
+      }
+    }
+
+    function handleSearchKey(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        submitGlobalSearch();
+      } else if (e.key === 'Escape') {
+        const pop = document.getElementById('searchPopover');
+        if (pop) pop.classList.add('hidden');
+      }
+    }
+
+    document.addEventListener('click', (e) => {
+      const wrap = document.getElementById('searchWrap');
+      const pop = document.getElementById('searchPopover');
+      if (wrap && pop && !wrap.contains(e.target)) {
+        pop.classList.add('hidden');
+      }
+    });
 
     // --- HORIZONTAL SNAP-SCROLL PLAYER TRACK (FitIQ Day-Card DNA) ---
     function setTrack(mode) {
